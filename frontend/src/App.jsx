@@ -279,23 +279,23 @@ const AppContent = () => {
            </div>
            
            <div className="flex flex-col gap-6">
-             {[
-               { name: 'Inicio', icon: <Home size={24}/> },
-               { name: 'Ejemplares', icon: <Bird size={24}/> },
-               { name: 'Tienda', icon: <ShoppingBag size={24}/> },
-               { name: 'Academia', icon: <BookOpen size={24}/> }
-             ].map((item, i) => (
-               <Link 
-                 key={i} 
-                 to={item.name === 'Inicio' ? '/' : `/${item.name.toLowerCase()}`} 
-                 onClick={() => setMenuMovilAbierto(false)} 
-                 className="group flex items-center gap-4 text-3xl font-bold text-slate-300 no-underline hover:text-white transition-colors py-2"
-               >
-                 <span className="text-emerald-500/50 group-hover:text-emerald-400 transition-colors">{item.icon}</span>
-                 {item.name}
-               </Link>
-             ))}
-           </div>
+              {[
+                { name: 'Inicio', to: '/', icon: <Home size={24}/> },
+                { name: 'Ejemplares', to: '/aves', icon: <Bird size={24}/> },
+                { name: 'Tienda', to: '/tienda', icon: <ShoppingBag size={24}/> },
+                { name: 'Academia', to: '/cuidados', icon: <BookOpen size={24}/> }
+              ].map((item, i) => (
+                <Link 
+                  key={i} 
+                  to={item.to} 
+                  onClick={() => setMenuMovilAbierto(false)} 
+                  className="group flex items-center gap-4 text-3xl font-bold text-slate-300 no-underline hover:text-white transition-colors py-2"
+                >
+                  <span className="text-emerald-500/50 group-hover:text-emerald-400 transition-colors">{item.icon}</span>
+                  {item.name}
+                </Link>
+              ))}
+            </div>
         </div>
 
         <Link to="/admin" onClick={() => setMenuMovilAbierto(false)} className="w-full py-5 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl text-center font-black text-white text-lg no-underline shadow-lg shadow-emerald-900/20 active:scale-95 transition-transform">
@@ -332,7 +332,7 @@ const AppContent = () => {
               {/* Columna Marca */}
               <div className="lg:col-span-5 space-y-6">
                 <div className="flex items-center gap-3">
-                    <img src="/icono.png" alt="Logo" className="h-10 w-auto opacity-90 invert brightness-0" />
+                    <img src="/icono.png" alt="Logo" className="h-10 w-auto opacity-90" />
                     <h3 className="text-3xl font-black m-0 tracking-tighter text-white">CUNA<span className="text-emerald-500">ALADA</span></h3>
                 </div>
                 <p className="text-slate-400 text-base leading-relaxed max-w-sm">
