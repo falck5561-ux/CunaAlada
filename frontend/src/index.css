@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Opcional: un estilo base para que la letra se vea moderna */
+body {
+  background-color: #f3f4f6; /* Un gris muy clarito de fondo */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
