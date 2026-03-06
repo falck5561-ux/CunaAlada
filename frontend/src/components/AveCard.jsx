@@ -127,12 +127,12 @@ const AveCard = ({ ave }) => {
   useEffect(() => {
     if (ave.fotoUrl) {
       if (ave.fotoUrl.startsWith('/uploads')) {
-        setImgSrc(`http://localhost:5000${ave.fotoUrl}`);
+        setImgSrc(`https://cunaalada-kitw.onrender.com${ave.fotoUrl}`);
       } else {
         setImgSrc(ave.fotoUrl);
       }
     } else if (ave.foto) { // Soporte para campo 'foto' si existe
-         setImgSrc(`http://localhost:5000${ave.foto}`);
+         setImgSrc(`https://cunaalada-kitw.onrender.com${ave.foto}`);
     } else {
       setImgSrc("/portada.png"); // Fallback
     }

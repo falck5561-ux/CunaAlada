@@ -7,7 +7,7 @@ import html2canvas from 'html2canvas';
 import QRCode from "react-qr-code";
 import { PenLine, Download, ShieldCheck, Star, Check, Bird, Feather } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = 'https://cunaalada-kitw.onrender.com';
 
 /* --- ESTILOS MEJORADOS Y COMPATIBLES CON CAPTURA --- */
 const EstilosCertificado = () => (

@@ -52,7 +52,7 @@ const AdminPanel = ({ cerrarSesion }) => {
   const cargarDatos = async () => {
     try {
       const endpoint = seccion === 'aves' ? 'aves' : 'productos';
-      const res = await axios.get(`http://localhost:5000/api/${endpoint}`);
+      const res = await axios.get(`https://cunaalada-kitw.onrender.com/api/${endpoint}`);
       setLista(res.data);
     } catch (error) { 
       console.error("Error cargando datos:", error);
@@ -107,7 +107,7 @@ const AdminPanel = ({ cerrarSesion }) => {
         if (fotoExistente.startsWith('http')) {
              setPreviewUrl(fotoExistente);
         } else {
-             setPreviewUrl(`http://localhost:5000${fotoExistente}`);
+             setPreviewUrl(`https://cunaalada-kitw.onrender.com${fotoExistente}`);
         }
     } else {
         setPreviewUrl(null);
@@ -158,10 +158,10 @@ const AdminPanel = ({ cerrarSesion }) => {
       const config = { headers: { 'Content-Type': 'multipart/form-data' } };
 
       if (modoEdicion) {
-        await axios.put(`http://localhost:5000/api/${endpoint}/${idEditar}`, formData, config);
+        await axios.put(`https://cunaalada-kitw.onrender.com/api/${endpoint}/${idEditar}`, formData, config);
         showToast('¡Registro actualizado correctamente!');
       } else {
-        await axios.post(`http://localhost:5000/api/${endpoint}`, formData, config);
+        await axios.post(`https://cunaalada-kitw.onrender.com/api/${endpoint}`, formData, config);
         showToast('¡Nuevo registro creado con éxito!');
       }
       resetForms();
@@ -179,7 +179,7 @@ const AdminPanel = ({ cerrarSesion }) => {
   const confirmarEliminacionReal = async () => {
       try {
         const endpoint = seccion === 'aves' ? 'aves' : 'productos';
-        await axios.delete(`http://localhost:5000/api/${endpoint}/${modalEliminar.id}`);
+        await axios.delete(`https://cunaalada-kitw.onrender.com/api/${endpoint}/${modalEliminar.id}`);
         showToast('Registro eliminado correctamente');
         cargarDatos();
       } catch (error) { 
@@ -191,7 +191,7 @@ const AdminPanel = ({ cerrarSesion }) => {
 
   const generarLinkRegistro = async (id) => {
     try {
-        const res = await axios.post(`http://localhost:5000/api/aves/${id}/generar-link`);
+        const res = await axios.post(`https://cunaalada-kitw.onrender.com/api/aves/${id}/generar-link`);
         const linkFinal = res.data.link.replace('/adopcion/', '/registro/');
         navigator.clipboard.writeText(linkFinal);
         showToast('Link copiado al portapapeles 📋');
@@ -604,7 +604,7 @@ const AdminPanel = ({ cerrarSesion }) => {
                                         (item.foto || item.fotoUrl)
                                         ? ( (item.foto || item.fotoUrl).startsWith('http') 
                                             ? (item.foto || item.fotoUrl) 
-                                            : `http://localhost:5000${item.foto || item.fotoUrl}` )
+                                            : `https://cunaalada-kitw.onrender.com${item.foto || item.fotoUrl}` )
                                         : '/portada.png'
                                     }
                                     className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" 

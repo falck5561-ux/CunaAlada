@@ -43,7 +43,7 @@ const Tienda = () => {
   const obtenerProductos = async () => {
     setCargando(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/productos');
+      const res = await axios.get('https://cunaalada-kitw.onrender.com/api/productos');
       setProductos(res.data);
     } catch (err) { setError('Error de conexión'); } finally { setCargando(false); }
   };

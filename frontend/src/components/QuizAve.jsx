@@ -138,7 +138,7 @@ const QuizAve = ({ avesDisponibles = [] }) => {
       const ruta = ave.foto || ave.fotoUrl;
       if (!ruta) return "/portada.png";
       if (ruta.startsWith('http')) return ruta;
-      return `http://localhost:5000${ruta}`;
+      return `https://cunaalada-kitw.onrender.com${ruta}`;
   };
 
   return (

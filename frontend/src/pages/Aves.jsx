@@ -20,7 +20,7 @@ const Aves = () => {
     setCargando(true);
     setError(false);
     try {
-      const res = await axios.get('http://localhost:5000/api/aves');
+      const res = await axios.get('https://cunaalada-kitw.onrender.com/api/aves');
       // Filtramos: Solo mostramos si no tiene estado o si está 'disponible'
       const disponibles = res.data.filter(ave => !ave.estado || ave.estado === 'disponible');
       setAves(Array.isArray(disponibles) ? disponibles : []);

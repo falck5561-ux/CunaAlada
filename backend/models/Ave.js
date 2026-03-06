@@ -8,12 +8,12 @@ const aveSchema = new mongoose.Schema({
         trim: true
     },
     mutacion: {
-        type: String, // Ej: Roseicollis, Fischeri, Azul D
+        type: String, 
         required: true
     },
     fechaNacimiento: {
         type: Date,
-        required: true // ¡ESTO ES LO MÁS IMPORTANTE PARA TU IDEA!
+        required: true 
     },
     precio: {
         type: Number,

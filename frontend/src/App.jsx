@@ -123,7 +123,7 @@ const AppContent = () => {
     useEffect(() => {
         const fetchAves = async () => {
             try {
-                const res = await axios.get('http://localhost:5000/api/aves');
+                const res = await axios.get('https://cunaalada-kitw.onrender.com/api/aves');
                 setAvesJuego(res.data);
             } catch (error) {
                 console.error("Error cargando aves para el juego", error);

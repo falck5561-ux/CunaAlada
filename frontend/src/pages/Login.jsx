@@ -10,7 +10,7 @@ const Login = ({ setAutorizado }) => {
   const manejarLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/login', { password });
+      const res = await axios.post('https://cunaalada-kitw.onrender.com/api/login', { password });
       if (res.data.success) {
         localStorage.setItem('adminToken', res.data.token);
         setAutorizado(true);
