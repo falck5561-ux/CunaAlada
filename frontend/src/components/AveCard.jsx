@@ -112,6 +112,12 @@ const AveCard = ({ ave }) => {
   const [imgSrc, setImgSrc] = useState('/portada.png');
   const wrapperRef = useRef(null);
 
+  useEffect(() => {
+    if (ave.abierto) {
+      setEclosionado(true);
+    }
+  }, [ave.abierto]);
+
   // --- LÓGICA DE PRECIO Y OFERTA ---
   const esOferta = ave.precioOriginal && ave.precioOriginal > ave.precio;
   const porcentajeDescuento = esOferta 

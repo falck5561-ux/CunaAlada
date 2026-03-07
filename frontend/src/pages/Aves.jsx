@@ -13,7 +13,16 @@ const Aves = () => {
   const [aveSeleccionadaId, setAveSeleccionadaId] = useState(null);
   
   // Estado para el Quiz
-  const [mostrarQuiz, setMostrarQuiz] = useState(false);
+  const [mostrarQuiz, setMostrarQuiz] = useState(false);
+
+  // --- NUEVA FUNCIÓN PARA ABRIR TODOS LOS HUEVOS ---
+  const abrirTodosLosHuevos = () => {
+    const avesActualizadas = aves.map(ave => ({ 
+      ...ave, 
+      abierto: true // Le agregamos esta propiedad a cada ave
+    }));
+    setAves(avesActualizadas);
+  };
 
   // --- CARGAR DATOS ---
   const obtenerAves = async () => {
@@ -102,43 +111,57 @@ const Aves = () => {
             Elige tu compañero ideal hoy mismo.
           </motion.p>
 
-          {/* BOTÓN TOGGLE QUIZ */}
-          <motion.button
-             initial={{ opacity: 0, y: 10 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.4 }}
-             onClick={() => setMostrarQuiz(!mostrarQuiz)}
-             className={`
-               group flex items-center gap-2 mx-auto px-6 py-3 rounded-2xl font-bold text-sm transition-all
-               ${mostrarQuiz 
-                 ? 'bg-slate-200 text-slate-600' 
-                 : 'bg-white text-emerald-600 shadow-lg shadow-emerald-100 hover:scale-105 border border-emerald-100'}
-             `}
-          >
-            <AnimatePresence mode='wait' initial={false}>
-              {mostrarQuiz ? (
-                <motion.span 
-                  key="close" 
-                  initial={{ opacity: 0, y: -10 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  exit={{ opacity: 0, y: 10 }}
-                  className="flex items-center gap-2"
-                >
-                  Cerrar asistente <ChevronUp size={16}/>
-                </motion.span>
-              ) : (
-                <motion.span 
-                  key="open"
-                  initial={{ opacity: 0, y: 10 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  exit={{ opacity: 0, y: -10 }}
-                  className="flex items-center gap-2"
-                >
-                  <HelpCircle size={18}/> ¿No sabes cuál elegir? Haz el Test
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
+          {/* --- BOTONES DE ACCIÓN --- */}
+          <div className="flex flex-wrap justify-center items-center gap-4 mx-auto">
+            {/* BOTÓN TOGGLE QUIZ (El que ya tenías) */}
+            <motion.button
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ delay: 0.4 }}
+               onClick={() => setMostrarQuiz(!mostrarQuiz)}
+               className={`
+                 group flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all
+                 ${mostrarQuiz 
+                   ? 'bg-slate-200 text-slate-600' 
+                   : 'bg-white text-emerald-600 shadow-lg shadow-emerald-100 hover:scale-105 border border-emerald-100'}
+               `}
+            >
+              <AnimatePresence mode='wait' initial={false}>
+                {mostrarQuiz ? (
+                  <motion.span 
+                    key="close" 
+                    initial={{ opacity: 0, y: -10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    exit={{ opacity: 0, y: 10 }}
+                    className="flex items-center gap-2"
+                  >
+                    Cerrar asistente <ChevronUp size={16}/>
+                  </motion.span>
+                ) : (
+                  <motion.span 
+                    key="open"
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex items-center gap-2"
+                  >
+                    <HelpCircle size={18}/> ¿No sabes cuál elegir? Haz el Test
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+
+            {/* NUEVO BOTÓN: ECLOSIONAR TODOS */}
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              onClick={abrirTodosLosHuevos}
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all bg-emerald-500 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-600 hover:scale-105"
+            >
+              🐣 Eclosionar todos
+            </motion.button>
+          </div>
         </div>
 
         {/* --- SECCIÓN DEL QUIZ INTELIGENTE --- */}
