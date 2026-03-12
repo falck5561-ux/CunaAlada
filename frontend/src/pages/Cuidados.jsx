@@ -137,8 +137,8 @@ const Cuidados = () => {
         {/* --- PANEL DE INFORMACIÓN INTERACTIVA (BENTO GRID) --- */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-32">
           
-          {/* SIDEBAR DE NAVEGACIÓN */}
-          <div className="lg:col-span-3 flex flex-col gap-3 sticky top-10 h-min">
+          {/* SIDEBAR DE NAVEGACIÓN (Responsivo: Horizontal en móvil, Vertical en Desktop) */}
+          <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 lg:sticky lg:top-10 h-min z-20 snap-x">
             <LayoutGroup>
               {Object.values(INFO_TABS).map((tab) => {
                 const isActive = activeTab === tab.id;
@@ -146,14 +146,14 @@ const Cuidados = () => {
                   <button 
                     key={tab.id} 
                     onClick={() => setActiveTab(tab.id)}
-                    className={`relative flex items-center gap-4 p-5 rounded-3xl transition-all duration-300 text-left group outline-none ${isActive ? 'text-white shadow-xl scale-105' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                    className={`relative flex items-center gap-3 lg:gap-4 p-4 lg:p-5 rounded-3xl transition-all duration-300 text-left group outline-none flex-shrink-0 snap-start ${isActive ? 'text-white shadow-lg lg:shadow-xl lg:scale-105' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
                   >
                     {isActive && (
                       <motion.div layoutId="activeTabBg" className={`absolute inset-0 rounded-3xl ${tab.color}`} />
                     )}
-                    <tab.icon className="relative z-10" size={24} />
-                    <span className="relative z-10 font-bold text-sm uppercase tracking-wide">{tab.label}</span>
-                    {isActive && <motion.div layoutId="arrow" className="absolute right-5 z-10"><ChevronRight size={18}/></motion.div>}
+                    <tab.icon className="relative z-10 shrink-0" size={20} />
+                    <span className="relative z-10 font-bold text-sm uppercase tracking-wide whitespace-nowrap">{tab.label}</span>
+                    {isActive && <motion.div layoutId="arrow" className="absolute right-4 z-10 hidden lg:block"><ChevronRight size={18}/></motion.div>}
                   </button>
                 );
               })}
