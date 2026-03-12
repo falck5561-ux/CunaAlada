@@ -209,10 +209,10 @@ const Cuidados = () => {
                        </div>
                     </div>
 
-                    {/* Gráfico de distribución */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+                    {/* Gráfico de distribución (Responsivo con scroll horizontal en móviles) */}
+                    <div className="flex md:grid md:grid-cols-4 gap-4 mb-12 overflow-x-auto pb-4 snap-x">
                       {INFO_TABS.DIETA.stats.map((stat, i) => (
-                         <div key={i} className="bg-slate-50 p-6 rounded-[30px] text-center border border-slate-100 relative overflow-hidden">
+                         <div key={i} className="min-w-[220px] md:min-w-0 flex-shrink-0 bg-slate-50 p-6 rounded-[30px] text-center border border-slate-100 relative overflow-hidden snap-center">
                             <h4 className="text-4xl font-black text-emerald-500 mb-1">{stat.val}</h4>
                             <p className="font-bold text-slate-700 text-sm uppercase mb-2">{stat.label}</p>
                             <p className="text-xs text-slate-400 leading-tight">{stat.desc}</p>

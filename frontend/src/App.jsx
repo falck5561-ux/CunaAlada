@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import axios from 'axios'; // Necesario para cargar las aves del juego
+import axios from 'axios'; 
 
 // Importación de Páginas
 import Login from './pages/Login';
@@ -20,7 +20,7 @@ import {
   Sparkles, ArrowRight, Heart, Instagram, Facebook, Zap
 } from 'lucide-react';
 
-/* --- SISTEMA DE DISEÑO ULTRA-PREMIUM --- */
+
 const EstilosMaestros = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
