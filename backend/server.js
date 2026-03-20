@@ -2,10 +2,13 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid'); 
-const multer = require('multer'); // <--- IMPORTANTE: Para manejar fotos
-const path = require('path');     // <--- IMPORTANTE: Para rutas de archivos
-const fs = require('fs');         // <--- IMPORTANTE: Para crear carpetas
+const multer = require('multer'); 
+const path = require('path');     
+const fs = require('fs');         
 require('dotenv').config();
+
+// NUEVO: Importar e inicializar Stripe con la llave secreta del archivo .env
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -74,6 +77,9 @@ const ProductoSchema = new mongoose.Schema({
 });
 const Producto = mongoose.model('Producto', ProductoSchema);
 
+// 3. Modelo de SORTEO (Importado desde su archivo)
+const Sorteo = require('./models/Sorteo');
+
 
 /* --- RUTAS PARA AVES --- */
 
@@ -85,7 +91,6 @@ app.get('/api/aves', async (req, res) => {
 });
 
 // CREAR AVE (CON FOTO)
-// 'foto' es el nombre que le pusimos en el Frontend (formData.append('foto'...))
 app.post('/api/aves', upload.single('foto'), async (req, res) => {
     try {
         const datos = req.body;
@@ -110,7 +115,6 @@ app.put('/api/aves/:id', upload.single('foto'), async (req, res) => {
         if (req.file) {
             datos.fotoUrl = `/uploads/${req.file.filename}`;
         }
-        // Si no subieron imagen, Mongoose respetará la que ya estaba en la base de datos
 
         const aveActualizada = await Ave.findByIdAndUpdate(req.params.id, datos, { new: true });
         res.json({ success: true, message: 'Ave actualizada', ave: aveActualizada });
@@ -126,7 +130,6 @@ app.delete('/api/aves/:id', async (req, res) => {
 
 
 /* --- RUTAS SISTEMA DE PROPIEDAD / REGISTRO --- */
-// (Estas no llevan fotos, se quedan igual)
 
 app.post('/api/aves/:id/generar-link', async (req, res) => {
     try {
@@ -174,7 +177,6 @@ app.get('/api/productos', async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-// CREAR PRODUCTO (CON FOTO)
 app.post('/api/productos', upload.single('foto'), async (req, res) => {
     try {
         const datos = req.body;
@@ -187,7 +189,6 @@ app.post('/api/productos', upload.single('foto'), async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-// EDITAR PRODUCTO (CON FOTO)
 app.put('/api/productos/:id', upload.single('foto'), async (req, res) => {
     try {
         const datos = req.body;
@@ -203,6 +204,90 @@ app.delete('/api/productos/:id', async (req, res) => {
     try {
         await Producto.findByIdAndDelete(req.params.id);
         res.json({ success: true });
+    } catch (error) { res.status(500).json(error); }
+});
+
+
+/* --- RUTAS PARA SORTEOS --- */
+
+// 1. Obtener todos los sorteos activos
+app.get('/api/sorteos', async (req, res) => {
+    try {
+        const sorteos = await Sorteo.find();
+        res.json(sorteos);
+    } catch (error) { res.status(500).json(error); }
+});
+
+// 2. NUEVO: Crear el intento de pago con Stripe
+app.post('/api/sorteos/crear-pago', async (req, res) => {
+    try {
+        const { sorteoId } = req.body;
+        const sorteo = await Sorteo.findById(sorteoId);
+
+        if (!sorteo || sorteo.estado === 'FINALIZADO') {
+            return res.status(400).json({ error: 'El sorteo no está disponible' });
+        }
+
+        // Stripe maneja el dinero en centavos. Si el boleto cuesta $150 MXN, le enviamos 15000
+        const cantidadCentavos = sorteo.precioBoleto * 100;
+
+        // Creamos el intento de pago
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: cantidadCentavos,
+            currency: 'mxn', // Pesos mexicanos
+            metadata: { 
+                sorteoId: sorteo._id.toString()
+            }
+        });
+
+        // Le devolvemos al frontend un "secreto de cliente" para que pueda mostrar el formulario de tarjeta
+        res.json({ clientSecret: paymentIntent.client_secret });
+
+    } catch (error) {
+        console.error("Error en Stripe:", error);
+        res.status(500).json({ error: 'Hubo un error al procesar el pago' });
+    }
+});
+
+// 3. Comprar un boleto (Registra en base de datos al confirmar el pago)
+app.post('/api/sorteos/:id/comprar', async (req, res) => {
+    try {
+        const { nombreCliente, telefonoCliente, emailCliente, idPagoStripe } = req.body;
+        const sorteo = await Sorteo.findById(req.params.id);
+
+        if (!sorteo || sorteo.estado === 'FINALIZADO') {
+            return res.status(400).json({ success: false, message: 'El sorteo no está disponible.' });
+        }
+
+        if (sorteo.boletosVendidos.length >= sorteo.totalBoletos) {
+            return res.status(400).json({ success: false, message: 'Boletos agotados.' });
+        }
+
+        // Registrar el boleto
+        sorteo.boletosVendidos.push({
+            nombreCliente,
+            telefonoCliente,
+            emailCliente,
+            idPagoStripe
+        });
+
+        // Verificar si se vendió el último boleto para cerrar el sorteo
+        if (sorteo.boletosVendidos.length === sorteo.totalBoletos) {
+            sorteo.estado = 'FINALIZADO';
+            
+            // Elegir ganador aleatorio
+            const indiceGanador = Math.floor(Math.random() * sorteo.totalBoletos);
+            const boletoGanador = sorteo.boletosVendidos[indiceGanador];
+            
+            sorteo.ganador = {
+                nombreCliente: boletoGanador.nombreCliente,
+                telefonoCliente: boletoGanador.telefonoCliente,
+                numeroBoleto: indiceGanador + 1 // +1 para que el boleto no sea 0
+            };
+        }
+
+        await sorteo.save();
+        res.json({ success: true, message: 'Boleto adquirido con éxito', sorteo });
     } catch (error) { res.status(500).json(error); }
 });
 
