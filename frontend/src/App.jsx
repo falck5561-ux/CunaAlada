@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+<<<<<<< HEAD
 import axios from 'axios'; 
+=======
+import axios from 'axios';
+>>>>>>> main
 
 // Importación de Páginas
 import Login from './pages/Login';
@@ -9,15 +13,16 @@ import AdminPanel from './pages/AdminPanel';
 import Aves from './pages/Aves';
 import Cuidados from './pages/Cuidados';
 import Registro from './pages/Registro';
+import Sorteos from './pages/Sorteos'; // <--- NUEVA PÁGINA DE SORTEOS
 
 // Importación de Componentes
 import BotonWhatsApp from './components/BotonWhatsApp';
-import JaulaInteractiva from './components/JaulaInteractiva'; // <--- IMPORTANTE: El nuevo juego
+import JaulaInteractiva from './components/JaulaInteractiva';
 
 // Iconos
 import { 
   Bird, ShoppingBag, Home, Menu, X, ShieldCheck, BookOpen,
-  Sparkles, ArrowRight, Heart, Instagram, Facebook, Zap
+  Sparkles, ArrowRight, Heart, Instagram, Facebook, Zap, Ticket
 } from 'lucide-react';
 
 
@@ -112,12 +117,10 @@ const AppContent = () => {
     setMenuMovilAbierto(false);
   };
 
-  // Lógica para ocultar Footer y Navbar en rutas especiales
   const esPaginaPrivada = location.pathname.startsWith('/admin') || location.pathname.startsWith('/registro');
 
-  // --- COMPONENTE DE INICIO (Con el Juego Integrado) ---
+  // --- COMPONENTE DE INICIO ---
   const Inicio = () => {
-    // Estado para cargar las aves en la Jaula Interactiva
     const [avesJuego, setAvesJuego] = useState([]);
 
     useEffect(() => {
@@ -201,7 +204,7 @@ const AppContent = () => {
                 </section>
             </div>
 
-            {/* --- SECCIÓN DEL JUEGO: JAULA INTERACTIVA --- */}
+            {/* SECCIÓN DEL JUEGO: JAULA INTERACTIVA */}
             <section className="py-20 relative bg-gradient-to-b from-white via-emerald-50/50 to-white z-10">
                 <div className="container mx-auto px-6">
                     <JaulaInteractiva avesDisponibles={avesJuego} />
@@ -232,6 +235,7 @@ const AppContent = () => {
               { to: "/", label: "Inicio", icon: <Home size={18}/> },
               { to: "/aves", label: "Ejemplares", icon: <Bird size={18}/> },
               { to: "/tienda", label: "Tienda", icon: <ShoppingBag size={18}/> },
+              { to: "/sorteos", label: "Sorteos", icon: <Ticket size={18}/> },
               { to: "/cuidados", label: "Academia", icon: <BookOpen size={18}/> }
             ].map((item) => (
               <Link 
@@ -260,7 +264,7 @@ const AppContent = () => {
         </div>
       </nav>
 
-      {/* --- MENU MÓVIL (SIDEBAR / DRAWER) --- */}
+      {/* MENU MÓVIL (SIDEBAR / DRAWER) */}
       <div 
         className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[105] transition-opacity duration-300 lg:hidden ${menuMovilAbierto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setMenuMovilAbierto(false)}
@@ -283,6 +287,7 @@ const AppContent = () => {
                 { name: 'Inicio', to: '/', icon: <Home size={24}/> },
                 { name: 'Ejemplares', to: '/aves', icon: <Bird size={24}/> },
                 { name: 'Tienda', to: '/tienda', icon: <ShoppingBag size={24}/> },
+                { name: 'Sorteos', to: '/sorteos', icon: <Ticket size={24}/> },
                 { name: 'Academia', to: '/cuidados', icon: <BookOpen size={24}/> }
               ].map((item, i) => (
                 <Link 
@@ -303,7 +308,6 @@ const AppContent = () => {
         </Link>
       </div>
 
-
       {/* RENDERIZADO DE PÁGINAS */}
       <main className="flex-grow pt-28">
         <Routes>
@@ -312,24 +316,22 @@ const AppContent = () => {
           <Route path="/aves" element={<Aves />} />
           <Route path="/cuidados" element={<Cuidados />} />
           <Route path="/registro/:token" element={<Registro />} />
+          <Route path="/sorteos" element={<Sorteos />} />
           <Route path="/admin" element={autorizado ? <AdminPanel cerrarSesion={cerrarSesion} /> : <div className="py-24 max-w-md mx-auto px-4"><Login setAutorizado={setAutorizado} /></div>} />
         </Routes>
       </main>
 
-      {/* --- AQUÍ ESTÁ EL BOTÓN DE WHATSAPP --- */}
-      {/* Se mostrará en todas las páginas flotando en la esquina */}
+      {/* BOTÓN DE WHATSAPP */}
       <BotonWhatsApp />
       
       {/* FOOTER */}
       {!esPaginaPrivada && (
         <footer className="bg-slate-900 text-white pt-20 pb-10 rounded-t-[40px] md:rounded-t-[80px] relative z-20 mt-20 border-t border-emerald-900/50 overflow-hidden">
-          {/* Luz superior decorativa del footer */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-50"></div>
           
           <div className="container mx-auto px-8 md:px-12">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 mb-16">
               
-              {/* Columna Marca */}
               <div className="lg:col-span-5 space-y-6">
                 <div className="flex items-center gap-3">
                     <img src="/icono.png" alt="Logo" className="h-10 w-auto opacity-90" />
@@ -344,17 +346,16 @@ const AppContent = () => {
                 </div>
               </div>
 
-              {/* Columna Navegación */}
               <div className="lg:col-span-3 space-y-6">
                 <h4 className="text-sm font-bold uppercase tracking-widest text-emerald-500">Explorar</h4>
                 <div className="flex flex-col gap-3 text-slate-400 font-medium text-sm">
                   <Link to="/aves" className="hover:text-white transition-colors flex items-center gap-2 group"><span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-emerald-500 transition-colors"></span> Nuestros Ejemplares</Link>
                   <Link to="/tienda" className="hover:text-white transition-colors flex items-center gap-2 group"><span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-emerald-500 transition-colors"></span> Tienda de Accesorios</Link>
+                  <Link to="/sorteos" className="hover:text-white transition-colors flex items-center gap-2 group"><span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-emerald-500 transition-colors"></span> Sorteos Exclusivos</Link>
                   <Link to="/cuidados" className="hover:text-white transition-colors flex items-center gap-2 group"><span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-emerald-500 transition-colors"></span> Guía de Cuidados</Link>
                 </div>
               </div>
 
-              {/* Columna Info */}
               <div className="lg:col-span-4 space-y-6">
                 <h4 className="text-sm font-bold uppercase tracking-widest text-emerald-500">Contacto y Ubicación</h4>
                 <div className="space-y-4">
@@ -370,7 +371,6 @@ const AppContent = () => {
               </div>
             </div>
 
-            {/* Copyright */}
             <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] font-bold tracking-widest text-slate-500 uppercase">
               <p>© {new Date().getFullYear()} CUNA ALADA • CAMPECHE</p>
               <div className="flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
