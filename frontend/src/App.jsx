@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+<<<<<<< HEAD
 import axios from 'axios';
+=======
+import axios from 'axios'; 
+>>>>>>> c8fe773d732950a8f5d6527f5720fc575cbaa5e9
 
 // Importación de Páginas
 import Login from './pages/Login';
@@ -21,7 +25,7 @@ import {
   Sparkles, ArrowRight, Heart, Instagram, Facebook, Zap, Ticket
 } from 'lucide-react';
 
-/* --- SISTEMA DE DISEÑO ULTRA-PREMIUM --- */
+
 const EstilosMaestros = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
