@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-<<<<<<< HEAD
 import axios from 'axios';
-=======
-import axios from 'axios'; 
->>>>>>> c8fe773d732950a8f5d6527f5720fc575cbaa5e9
 
 // Importación de Páginas
 import Login from './pages/Login';
