@@ -361,7 +361,7 @@ const AppContent = () => {
           <Route path="/cuidados" element={<Cuidados />} />
           <Route path="/registro/:token" element={<Registro />} />
           <Route path="/sorteos" element={<Sorteos />} />
-          <Route path="/admin" element={autorizado ? <AdminPanel cerrarSesion={cerrarSesion} /> : <div className="py-24 max-w-md mx-auto px-4"><Login setAutorizado={setAutorizado} /></div>} />
+          <Route path="/admin" element={autorizado ? <AdminPanel cerrarSesion={cerrarSesion} /> : <Login setAutorizado={setAutorizado} />} />
         </Routes>
       </main>
 
