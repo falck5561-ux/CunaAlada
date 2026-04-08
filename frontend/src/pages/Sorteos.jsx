@@ -6,24 +6,26 @@ const Sorteos = () => {
     const [sorteos, setSorteos] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    // MEJORA: Definimos la URL de la API dinámicamente
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
     useEffect(() => {
         const cargarSorteos = async () => {
             try {
-                // Hacemos la petición a tu backend local
-                const res = await axios.get('http://localhost:5000/api/sorteos');
+                // Usamos nuestra variable dinámica en lugar de quemar el localhost
+                const res = await axios.get(`${API_URL}/api/sorteos`);
                 
                 if (res.data && res.data.length > 0) {
                     setSorteos(res.data);
                 } else {
-                    // Si la base de datos está vacía, mostramos este de demostración en CERO
                     setSorteos([{
                         _id: 'demo-1',
                         premio: 'Agapornis Fisher - Mutación Arlequín Azul',
                         descripcion: 'Hermoso ejemplar papillero de 25 días. Criado a mano, dócil y con excelente genética. Incluye transportadora premium, guía de cuidados y asesoría de por vida.',
-                        fotoUrl: '/portada.png', // Usa la imagen de tu proyecto
+                        fotoUrl: '/portada.png', 
                         precioBoleto: 150,
                         totalBoletos: 50,
-                        boletosVendidos: [], // <--- CERO BOLETOS VENDIDOS
+                        boletosVendidos: [], 
                         estado: 'ACTIVO'
                     }]);
                 }
@@ -35,7 +37,7 @@ const Sorteos = () => {
         };
 
         cargarSorteos();
-    }, []);
+    }, [API_URL]);
 
     if (loading) {
         return (
@@ -85,7 +87,7 @@ const Sorteos = () => {
 
                                 {/* Columna Izquierda: Imagen */}
                                 <div className="w-full lg:w-5/12 relative rounded-[32px] overflow-hidden aspect-square lg:aspect-auto lg:h-[450px]">
-                                    <div className="absolute inset-0 bg-slate-100 animate-pulse"></div> {/* Placeholder mientras carga imagen */}
+                                    <div className="absolute inset-0 bg-slate-100 animate-pulse"></div> 
                                     <img 
                                         src={sorteo.fotoUrl} 
                                         alt={sorteo.premio} 
@@ -138,7 +140,7 @@ const Sorteos = () => {
                                                 <div className="h-5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200 shadow-inner relative">
                                                     <div 
                                                         className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all duration-1000 ease-out relative"
-                                                        style={{ width: `${Math.max(porcentaje, 2)}%` }} // El Math.max asegura que se vea un filito aunque sea 0%
+                                                        style={{ width: `${Math.max(porcentaje, 2)}%` }} 
                                                     >
                                                         {/* Brillo interno de la barra */}
                                                         <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/30 rounded-full"></div>
