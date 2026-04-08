@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');         
 require('dotenv').config();
 
-// --- NUEVAS IMPORTACIONES PARA GOOGLE LOGIN ---
+// --- IMPORTACIONES PARA GOOGLE LOGIN Y SEGURIDAD ---
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 
@@ -32,14 +32,12 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         const dir = './uploads';
-        // Si la carpeta no existe, la crea automáticamente
         if (!fs.existsSync(dir)){
             fs.mkdirSync(dir);
         }
         cb(null, 'uploads/');
     },
     filename: function (req, file, cb) {
-        // Le pone la fecha al nombre para que no se repitan
         cb(null, Date.now() + path.extname(file.originalname)); 
     }
 });
@@ -62,8 +60,6 @@ const AveSchema = new mongoose.Schema({
     precioOriginal: Number,    
     fotoUrl: String, 
     enPromocion: { type: Boolean, default: false },
-
-    // Sistema de Propiedad
     estado: { type: String, default: 'disponible' }, 
     tokenRegistro: String,   
     nombreAsignado: String,  
@@ -85,10 +81,8 @@ const ProductoSchema = new mongoose.Schema({
 });
 const Producto = mongoose.model('Producto', ProductoSchema);
 
-// 3. Modelo de SORTEO (Importado desde su archivo)
+// 3. Importación de modelos externos
 const Sorteo = require('./models/Sorteo');
-
-// 4. NUEVO: Modelo de USUARIO (Importado desde su archivo para el login de Google)
 const Usuario = require('./models/Usuario');
 
 
@@ -101,7 +95,6 @@ app.get('/api/aves', async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-// CREAR AVE (CON FOTO)
 app.post('/api/aves', upload.single('foto'), async (req, res) => {
     try {
         const datos = req.body;
@@ -114,7 +107,6 @@ app.post('/api/aves', upload.single('foto'), async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-// EDITAR AVE (CON FOTO)
 app.put('/api/aves/:id', upload.single('foto'), async (req, res) => {
     try {
         const datos = req.body;
@@ -143,7 +135,8 @@ app.post('/api/aves/:id/generar-link', async (req, res) => {
             estado: 'reservado',
             tokenRegistro: token
         });
-        res.json({ success: true, link: `http://localhost:5173/registro/${token}` });
+        // IMPORTANTE: URL de producción actualizada
+        res.json({ success: true, link: `https://cuna-alada-web.onrender.com/registro/${token}` });
     } catch (error) { res.status(500).json(error); }
 });
 
@@ -194,17 +187,6 @@ app.post('/api/productos', upload.single('foto'), async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-app.put('/api/productos/:id', upload.single('foto'), async (req, res) => {
-    try {
-        const datos = req.body;
-        if (req.file) {
-            datos.fotoUrl = `/uploads/${req.file.filename}`;
-        }
-        await Producto.findByIdAndUpdate(req.params.id, datos);
-        res.json({ success: true });
-    } catch (error) { res.status(500).json(error); }
-});
-
 app.delete('/api/productos/:id', async (req, res) => {
     try {
         await Producto.findByIdAndDelete(req.params.id);
@@ -226,113 +208,76 @@ app.post('/api/sorteos/crear-pago', async (req, res) => {
     try {
         const { sorteoId } = req.body;
         const sorteo = await Sorteo.findById(sorteoId);
+        if (!sorteo) return res.status(400).json({ error: 'No disponible' });
 
-        if (!sorteo || sorteo.estado === 'FINALIZADO') {
-            return res.status(400).json({ error: 'El sorteo no está disponible' });
-        }
-
-        const cantidadCentavos = sorteo.precioBoleto * 100;
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: cantidadCentavos,
+            amount: sorteo.precioBoleto * 100,
             currency: 'mxn', 
-            metadata: { 
-                sorteoId: sorteo._id.toString()
-            }
+            metadata: { sorteoId: sorteo._id.toString() }
         });
-
         res.json({ clientSecret: paymentIntent.client_secret });
-    } catch (error) {
-        console.error("Error en Stripe:", error);
-        res.status(500).json({ error: 'Hubo un error al procesar el pago' });
-    }
-});
-
-app.post('/api/sorteos/:id/comprar', async (req, res) => {
-    try {
-        const { nombreCliente, telefonoCliente, emailCliente, idPagoStripe } = req.body;
-        const sorteo = await Sorteo.findById(req.params.id);
-
-        if (!sorteo || sorteo.estado === 'FINALIZADO') {
-            return res.status(400).json({ success: false, message: 'El sorteo no está disponible.' });
-        }
-
-        if (sorteo.boletosVendidos.length >= sorteo.totalBoletos) {
-            return res.status(400).json({ success: false, message: 'Boletos agotados.' });
-        }
-
-        sorteo.boletosVendidos.push({
-            nombreCliente,
-            telefonoCliente,
-            emailCliente,
-            idPagoStripe
-        });
-
-        if (sorteo.boletosVendidos.length === sorteo.totalBoletos) {
-            sorteo.estado = 'FINALIZADO';
-            const indiceGanador = Math.floor(Math.random() * sorteo.totalBoletos);
-            const boletoGanador = sorteo.boletosVendidos[indiceGanador];
-            
-            sorteo.ganador = {
-                nombreCliente: boletoGanador.nombreCliente,
-                telefonoCliente: boletoGanador.telefonoCliente,
-                numeroBoleto: indiceGanador + 1 
-            };
-        }
-
-        await sorteo.save();
-        res.json({ success: true, message: 'Boleto adquirido con éxito', sorteo });
     } catch (error) { res.status(500).json(error); }
 });
 
 
-/* --- LOGIN DE ADMINISTRADOR --- */
+/* --- LOGIN DE ADMINISTRADOR (TRADICIONAL) --- */
 app.post('/api/login', (req, res) => {
     const { password } = req.body;
     const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
-    
     if (password === adminPass) {
         res.json({ success: true, token: 'SESSION_ACTIVE_TOKEN' });
     } else {
-        res.status(401).json({ success: false, message: 'Contraseña incorrecta' });
+        res.status(401).json({ success: false });
     }
 });
 
 
-/* --- NUEVO: LOGIN DE CLIENTES CON GOOGLE --- */
+/* --- LOGIN INTELIGENTE CON GOOGLE (CLIENTES Y ADMIN) --- */
 app.post('/api/auth/google', async (req, res) => {
     const { token } = req.body;
     try {
-        // 1. Verificamos que el pase de Google sea real
         const ticket = await googleClient.verifyIdToken({
             idToken: token,
             audience: GOOGLE_CLIENT_ID,
         });
         const payload = ticket.getPayload();
-        
-        // 2. Extraemos los datos del cliente (nombre, correo, foto)
         const { sub: googleId, email, name: nombre, picture: foto } = payload;
 
-        // 3. Revisamos si este cliente ya nos había visitado
-        let usuario = await Usuario.findOne({ googleId });
+        // AQUÍ SE DEFINE AL JEFE (Administrador)
+        const CORREO_ADMIN = 'falck5561@gmail.com'; 
+        const esAdministrador = email.toLowerCase() === CORREO_ADMIN.toLowerCase();
+
+        let usuario = await Usuario.findOne({ email: email.toLowerCase() });
         
-        // 4. Si es su primera vez, lo registramos en la base de datos
         if (!usuario) {
-            usuario = new Usuario({ googleId, email, nombre, foto });
+            // Si es nuevo, le asignamos el rol dependiendo de su correo
+            usuario = new Usuario({ 
+                googleId, 
+                email: email.toLowerCase(), 
+                nombre, 
+                foto,
+                rol: esAdministrador ? 'admin' : 'cliente'
+            });
             await usuario.save();
+        } else {
+            // Si ya existe pero entra el admin, le aseguramos el rol
+            if (esAdministrador && usuario.rol !== 'admin') {
+                usuario.rol = 'admin';
+                await usuario.save();
+            }
         }
 
-        // 5. Le generamos su token de sesión válido por 7 días
         const sessionToken = jwt.sign(
             { id: usuario._id, rol: usuario.rol },
-            process.env.JWT_SECRET || 'CunaAladaSegura_2024',
+            process.env.JWT_SECRET || 'CunaAladaMasterKey_2026',
             { expiresIn: '7d' }
         );
 
         res.json({ success: true, token: sessionToken, usuario });
     } catch (error) {
-        console.error("Error al validar con Google:", error);
-        res.status(401).json({ success: false, message: 'No pudimos validar tu cuenta' });
+        console.error("Error Auth:", error);
+        res.status(401).json({ success: false, message: 'Fallo al validar cuenta' });
     }
 });
 
-app.listen(PORT, () => console.log(`🚀 Servidor de Cuna Alada corriendo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Servidor de Cuna Alada System v4.0 corriendo en puerto ${PORT}`));

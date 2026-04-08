@@ -1,193 +1,227 @@
 import React, { useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
-import { Sparkles, Lock, AlertCircle, ArrowLeft, ShieldCheck, Bird } from 'lucide-react';
+import { Sparkles, ShieldCheck, Bird, LogOut, LayoutDashboard, Globe, ShieldAlert } from 'lucide-react';
 
 const Login = ({ setAutorizado }) => {
-    // Estados para la vista
-    const [modoAdmin, setModoAdmin] = useState(false);
-    
-    // Estados para Clientes (Google)
     const [cargando, setCargando] = useState(false);
-    
-    // Estados para el Administrador
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState(false);
-
-    // URL de tu servidor
+    const [usuario, setUsuario] = useState(JSON.parse(localStorage.getItem('cuna_usuario')));
     const API_URL = 'https://cunaalada-kitw.onrender.com';
 
-    // --- LÓGICA PARA CLIENTES (GOOGLE) ---
-    const handleGoogleSuccess = async (credencialRespuesta) => {
+    const cerrarSesion = () => {
+        localStorage.clear();
+        setAutorizado(false);
+        setUsuario(null);
+        window.location.href = '/'; 
+    };
+
+    const handleGoogleSuccess = async (resToken) => {
         setCargando(true);
         try {
             const res = await axios.post(`${API_URL}/api/auth/google`, {
-                token: credencialRespuesta.credential
+                token: resToken.credential
             });
 
             if (res.data.success) {
+                const user = res.data.usuario;
                 localStorage.setItem('cuna_token', res.data.token);
-                localStorage.setItem('cuna_usuario', JSON.stringify(res.data.usuario));
+                localStorage.setItem('cuna_usuario', JSON.stringify(user));
                 
-                // Redirigimos a la tienda
-                window.location.href = '/tienda'; 
+                if (user.rol === 'admin') {
+                    localStorage.setItem('adminToken', res.data.token);
+                    setAutorizado(true);
+                    window.location.href = '/admin'; 
+                } else {
+                    window.location.href = '/tienda';
+                }
             }
-        } catch (error) {
-            console.error('Error en login:', error);
-            alert('Ups, hubo un detallito al iniciar sesión. Intentémoslo de nuevo.');
+        } catch (err) {
+            console.error(err);
         } finally {
             setCargando(false);
         }
     };
 
-    // --- LÓGICA PARA TI (ADMINISTRADOR) ---
-    const manejarLoginAdmin = async (e) => {
-        e.preventDefault();
-        try {
-            const res = await axios.post(`${API_URL}/api/login`, { password });
-            if (res.data.success) {
-                localStorage.setItem('adminToken', res.data.token);
-                setAutorizado(true); // Esto desbloquea tu AdminPanel
-            }
-        } catch (err) {
-            setError(true);
-            setTimeout(() => setError(false), 3000);
-        }
-    };
+    // --- VISTA: USUARIO YA AUTENTICADO ---
+    if (usuario) {
+        return (
+            <div className="min-h-screen bg-[#F0F2F5] flex items-center justify-center p-4 font-sans">
+                {/* Decoración de fondo */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                    <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-100 rounded-full blur-[120px] opacity-50" />
+                    <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-100 rounded-full blur-[120px] opacity-50" />
+                </div>
 
-    return (
-        <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-4 relative overflow-hidden transition-all duration-700">
-            
-            {/* --- ANIMACIONES DE AVES EN EL FONDO --- */}
-            <div className="absolute top-[20%] left-[-10%] opacity-20 animate-[flyCross_25s_linear_infinite] pointer-events-none">
-                <Bird size={80} className="text-emerald-400 drop-shadow-2xl" />
-            </div>
-            <div className="absolute top-[65%] right-[-10%] opacity-15 animate-[flyCrossReverse_30s_linear_infinite] pointer-events-none" style={{ transform: 'scaleX(-1)' }}>
-                <Bird size={60} className="text-teal-500 drop-shadow-2xl" />
-            </div>
-
-            {/* Luces de fondo decorativas */}
-            <div className="absolute top-[10%] left-[-10%] w-96 h-96 bg-emerald-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-30 animate-[pulse_6s_ease-in-out_infinite]" />
-            <div className="absolute bottom-[10%] right-[-10%] w-96 h-96 bg-teal-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-30 animate-[pulse_8s_ease-in-out_infinite]" />
-            
-            <div className="bg-white/80 backdrop-blur-2xl p-10 rounded-[40px] shadow-[0_20px_50px_rgba(16,185,129,0.15)] w-full max-w-md relative z-10 border border-white/60 transition-all duration-500">
-                
-                {/* --- VISTA DE CLIENTES --- */}
-                {!modoAdmin ? (
-                    <div className="text-center animate-[fadeIn_0.6s_ease-out]">
-                        
-                        {/* Ave flotante central */}
-                        <div className="flex justify-center mb-6">
-                            <div className="relative">
-                                {/* Brillo detrás del ave */}
-                                <div className="absolute inset-0 bg-emerald-400 blur-xl opacity-30 animate-pulse rounded-full"></div>
-                                <Bird size={56} className="text-emerald-600 relative z-10 animate-[float_4s_ease-in-out_infinite]" strokeWidth={1.5} />
-                            </div>
+                <div className="bg-white/80 backdrop-blur-2xl p-8 sm:p-12 rounded-[50px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white max-w-md w-full relative z-10 text-center animate-[reveal_0.5s_ease-out]">
+                    <div className="relative mb-8">
+                        <div className="w-32 h-32 mx-auto relative">
+                            <div className="absolute inset-0 bg-gradient-to-tr from-emerald-400 to-teal-300 rounded-full animate-spin-slow opacity-20" />
+                            <img src={usuario.foto} className="w-28 h-28 rounded-full border-4 border-white shadow-2xl relative z-10 mx-auto object-cover" alt="Perfil" />
                         </div>
-
-                        <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-full border border-emerald-100 text-emerald-700 font-extrabold text-xs uppercase tracking-widest mb-6 shadow-sm">
-                            <Sparkles size={16} className="text-emerald-500" /> Familia Alada
-                        </div>
-                        
-                        <h2 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">Bienvenido</h2>
-                        <p className="text-slate-500 mb-10 font-medium text-lg px-2 leading-relaxed">
-                            Inicia sesión de forma segura para guardar tus compras y ser parte de nuestra comunidad.
-                        </p>
-                        
-                        <div className="flex justify-center transition-transform hover:scale-105 duration-300 mb-12">
-                            {cargando ? (
-                                <div className="w-10 h-10 border-4 border-emerald-100 border-t-emerald-500 rounded-full animate-spin shadow-lg"></div>
-                            ) : (
-                                <GoogleLogin 
-                                    onSuccess={handleGoogleSuccess}
-                                    onError={() => alert('No pudimos conectar con Google. Por favor, intenta de nuevo.')}
-                                    theme="filled_blue"
-                                    size="large"
-                                    shape="pill"
-                                    text="continue_with"
-                                />
-                            )}
-                        </div>
-
-                        {/* Botón discreto para ir al Admin */}
-                        <div className="pt-6 border-t border-slate-100/80">
-                            <button 
-                                onClick={() => setModoAdmin(true)}
-                                className="group flex items-center justify-center gap-2 text-xs font-bold text-slate-400 hover:text-emerald-600 transition-colors mx-auto w-full"
-                            >
-                                <ShieldCheck size={16} className="group-hover:scale-110 transition-transform" />
-                                Acceso Administrativo
-                            </button>
+                        <div className="absolute bottom-1 right-1/3 translate-x-8 bg-emerald-500 text-white p-2 rounded-2xl shadow-xl border-4 border-white z-20">
+                            <ShieldCheck size={20} />
                         </div>
                     </div>
-                ) : (
-                    /* --- VISTA DE ADMINISTRADOR --- */
-                    <div className="animate-[fadeIn_0.6s_ease-out]">
+
+                    <div className="space-y-2 mb-10">
+                        <h2 className="text-3xl font-black text-slate-800 tracking-tight">¡Hola de nuevo!</h2>
+                        <p className="text-slate-500 font-bold uppercase text-xs tracking-[0.2em]">{usuario.nombre}</p>
+                        <div className="inline-flex items-center gap-2 px-4 py-1 bg-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            Estado: <span className={usuario.rol === 'admin' ? "text-emerald-600" : "text-blue-600"}>{usuario.rol}</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
                         <button 
-                            onClick={() => setModoAdmin(false)}
-                            className="absolute top-8 left-8 text-slate-400 hover:text-emerald-600 transition-colors hover:-translate-x-1"
-                            title="Volver al inicio de clientes"
+                            onClick={() => window.location.href = usuario.rol === 'admin' ? '/admin' : '/tienda'}
+                            className="group flex items-center justify-center gap-3 bg-slate-900 text-white py-5 rounded-3xl font-bold hover:bg-emerald-600 transition-all duration-300 shadow-xl hover:shadow-emerald-200"
                         >
-                            <ArrowLeft size={24} />
+                            <LayoutDashboard size={20} className="group-hover:rotate-12 transition-transform" />
+                            Ir al Panel de Control
                         </button>
-
-                        <div className="flex justify-center mb-8 mt-4">
-                            <div className="bg-emerald-50 p-5 rounded-3xl text-emerald-600 shadow-inner border border-emerald-100 animate-[float_4s_ease-in-out_infinite]">
-                                <Lock size={36} strokeWidth={2} />
-                            </div>
-                        </div>
-                        
-                        <h2 className="text-3xl font-black text-center text-slate-800 mb-3 tracking-tight">Panel de Control</h2>
-                        <p className="text-center text-slate-500 mb-8 text-sm font-medium px-4">
-                            Ingresa tu llave maestra para gestionar el inventario de Cuna Alada.
-                        </p>
-                        
-                        <form onSubmit={manejarLoginAdmin} className="space-y-6">
-                            <input 
-                                type="password" 
-                                placeholder="Introduce la contraseña secreta"
-                                className="w-full p-4 border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-center font-bold text-slate-700 bg-slate-50/50"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                            
-                            {error && (
-                                <div className="flex items-center gap-2 text-rose-500 text-sm justify-center bg-rose-50 p-3 rounded-xl border border-rose-100 animate-pulse font-bold">
-                                    <AlertCircle size={18} /> Contraseña incorrecta
-                                </div>
-                            )}
-                            
-                            <button className="w-full bg-gradient-to-r from-slate-900 to-slate-800 text-white py-4 rounded-2xl font-black text-lg hover:from-emerald-600 hover:to-teal-600 hover:-translate-y-1 transition-all duration-300 shadow-xl hover:shadow-emerald-500/30 flex items-center justify-center gap-2">
-                                <Sparkles size={20} /> Desbloquear Panel
-                            </button>
-                        </form>
+                        <button 
+                            onClick={cerrarSesion}
+                            className="flex items-center justify-center gap-3 bg-rose-50 text-rose-500 py-5 rounded-3xl font-bold hover:bg-rose-100 transition-all duration-300"
+                        >
+                            <LogOut size={20} /> Cerrar Sesión
+                        </button>
                     </div>
-                )}
+                </div>
+            </div>
+        );
+    }
+
+    // --- VISTA: LOGIN ---
+    return (
+        <div className="min-h-screen bg-white flex w-full overflow-hidden font-sans">
+            
+            {/* Lado Izquierdo: Branding cinemático (Solo PC) */}
+            <div className="hidden lg:flex w-7/12 relative bg-[#060910] items-center justify-center p-20 overflow-hidden">
+                {/* Capas de fondo */}
+                <img src="/portada.png" className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-screen scale-110 animate-pulse-slow" alt="Cuna Alada" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#060910] via-transparent to-emerald-900/20" />
                 
+                <div className="relative z-10 space-y-10 max-w-2xl">
+                    <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 text-emerald-400 animate-[reveal_0.8s_ease-out]">
+                        <Bird size={24} className="animate-[float_5s_infinite_ease-in-out]" />
+                        <span className="font-black tracking-[0.3em] text-[10px] uppercase">Original Quality</span>
+                    </div>
+
+                    <div className="space-y-4 animate-[reveal_1s_ease-out]">
+                        <h1 className="text-[100px] font-black text-white leading-[0.85] tracking-[-0.05em]">
+                            Cuna <br />
+                            <span className="text-emerald-500">Alada.</span>
+                        </h1>
+                        <div className="h-2 w-24 bg-emerald-500 rounded-full" />
+                    </div>
+
+                    <p className="text-slate-400 text-2xl font-medium leading-relaxed max-w-lg animate-[reveal_1.2s_ease-out]">
+                        Gestiona tu pasión. El sistema de control más avanzado para el criador moderno.
+                    </p>
+
+                    <div className="flex gap-10 pt-10 animate-[reveal_1.4s_ease-out]">
+                        <div className="space-y-1">
+                            <p className="text-white font-black text-2xl">100%</p>
+                            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Seguro</p>
+                        </div>
+                        <div className="w-px h-12 bg-white/10" />
+                        <div className="space-y-1">
+                            <p className="text-white font-black text-2xl">Cloud</p>
+                            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Sync</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Orbes flotantes */}
+                <div className="absolute top-[20%] right-[-10%] w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px]" />
             </div>
 
-            {/* ESTILOS DE ANIMACIÓN PERSONALIZADOS */}
+            {/* Lado Derecho: Formulario de Acceso */}
+            <div className="flex-1 flex items-center justify-center p-8 bg-[#F8F9FA] lg:bg-white relative">
+                {/* Decoración móvil */}
+                <div className="lg:hidden absolute top-[-10%] left-[-10%] w-64 h-64 bg-emerald-100 rounded-full blur-[80px] opacity-60" />
+
+                <div className="w-full max-w-[400px] space-y-12 relative z-10 animate-[reveal_0.6s_ease-out]">
+                    <div className="space-y-4 text-center lg:text-left">
+                        <div className="lg:hidden inline-flex p-5 bg-slate-900 rounded-[2rem] shadow-2xl mb-6">
+                            <Bird size={40} className="text-emerald-400" />
+                        </div>
+                        <h2 className="text-6xl font-black text-slate-900 tracking-tighter">Acceso.</h2>
+                        <p className="text-slate-500 text-lg font-medium leading-snug">
+                            Bienvenido a la consola central de Cuna Alada.
+                        </p>
+                    </div>
+
+                    <div className="space-y-8">
+                        <div className="group relative">
+                            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-[35px] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+                            <div className="relative bg-white p-10 rounded-[35px] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-slate-100">
+                                <div className="flex flex-col items-center gap-8">
+                                    <div className="w-full">
+                                        {cargando ? (
+                                            <div className="flex flex-col items-center gap-4 py-4">
+                                                <div className="w-12 h-12 border-4 border-slate-100 border-t-emerald-500 rounded-full animate-spin" />
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Validando credenciales...</span>
+                                            </div>
+                                        ) : (
+                                            <div className="transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]">
+                                                <GoogleLogin 
+                                                    onSuccess={handleGoogleSuccess}
+                                                    onError={() => alert('Error en la autenticación')}
+                                                    useOneTap
+                                                    theme="filled_black"
+                                                    shape="pill"
+                                                    width="100%"
+                                                    size="large"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center gap-6 w-full">
+                                        <div className="h-px bg-slate-100 flex-1" />
+                                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Smart Login</span>
+                                        <div className="h-px bg-slate-100 flex-1" />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4 w-full">
+                                        <div className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                            <ShieldAlert size={20} className="text-slate-400" />
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Encriptado</span>
+                                        </div>
+                                        <div className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                            <Globe size={20} className="text-slate-400" />
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Global Auth</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+                            <Sparkles size={14} className="text-emerald-500" />
+                            Powered by Cuna Alada Enterprise
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Estilos de Animación */}
             <style>{`
-                @keyframes fadeIn {
-                    0% { opacity: 0; transform: translateY(15px) scale(0.98); }
-                    100% { opacity: 1; transform: translateY(0) scale(1); }
-                }
                 @keyframes float {
-                    0%, 100% { transform: translateY(0px); }
-                    50% { transform: translateY(-12px); }
+                    0%, 100% { transform: translateY(0) rotate(0); }
+                    50% { transform: translateY(-20px) rotate(5deg); }
                 }
-                @keyframes flyCross {
-                    0% { transform: translate(-100vw, 10vh) rotate(15deg); opacity: 0; }
-                    10% { opacity: 0.4; }
-                    90% { opacity: 0.4; }
-                    100% { transform: translate(100vw, -15vh) rotate(-10deg); opacity: 0; }
+                @keyframes reveal {
+                    from { opacity: 0; transform: translateY(30px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
-                @keyframes flyCrossReverse {
-                    0% { transform: translate(100vw, -10vh) scaleX(-1) rotate(-15deg); opacity: 0; }
-                    10% { opacity: 0.3; }
-                    90% { opacity: 0.3; }
-                    100% { transform: translate(-100vw, 15vh) scaleX(-1) rotate(10deg); opacity: 0; }
+                @keyframes spin-slow {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
                 }
+                .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+                .animate-pulse-slow { animation: pulse 10s ease-in-out infinite; }
             `}</style>
         </div>
     );
