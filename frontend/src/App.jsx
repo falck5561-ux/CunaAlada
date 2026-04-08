@@ -16,7 +16,7 @@ import AdminPanel from "./pages/AdminPanel";
 import Aves from "./pages/Aves";
 import Cuidados from "./pages/Cuidados";
 import Registro from "./pages/Registro";
-import Sorteos from "./pages/Sorteos"; // <--- NUEVA PÁGINA DE SORTEOS
+import Sorteos from "./pages/Sorteos";
 
 // Importación de Componentes
 import BotonWhatsApp from "./components/BotonWhatsApp";
@@ -39,6 +39,8 @@ import {
   Facebook,
   Zap,
   Ticket,
+  LogOut,
+  User,
 } from "lucide-react";
 
 const EstilosMaestros = () => (
@@ -58,14 +60,12 @@ const EstilosMaestros = () => (
       overflow-x: hidden;
     }
 
-    /* Animación de entrada */
     @keyframes revealUp {
       from { opacity: 0; transform: translateY(30px) scale(0.98); }
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
     .reveal { animation: revealUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 
-    /* Orbes de luz */
     .bg-orb {
       position: absolute; width: 600px; height: 600px;
       border-radius: 50%; filter: blur(100px);
@@ -78,7 +78,6 @@ const EstilosMaestros = () => (
       to { transform: translate(100px, 100px); }
     }
 
-    /* Efectos de Cristal */
     .glass {
       background: rgba(255, 255, 255, 0.7);
       backdrop-filter: blur(16px);
@@ -87,13 +86,12 @@ const EstilosMaestros = () => (
     }
 
     .glass-dark {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
       border-left: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* Botones Interactivos */
     .btn-action {
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative; overflow: hidden;
@@ -103,7 +101,6 @@ const EstilosMaestros = () => (
       box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.3);
     }
     
-    /* Navbar Link */
     .nav-item { position: relative; transition: color 0.3s; }
     .nav-item::after {
       content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 2px;
@@ -135,13 +132,26 @@ const AppContent = () => {
   const [autorizado, setAutorizado] = useState(
     !!localStorage.getItem("adminToken"),
   );
+  const [usuario, setUsuario] = useState(
+    JSON.parse(localStorage.getItem("cuna_usuario")),
+  );
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
   const location = useLocation();
 
+  // Actualizar el estado del usuario si cambia el localStorage (por si inicia sesión)
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("cuna_usuario"));
+    const auth = !!localStorage.getItem("adminToken");
+    setUsuario(user);
+    setAutorizado(auth);
+  }, [location.pathname]); // Se dispara cada vez que navegamos
+
   const cerrarSesion = () => {
-    localStorage.removeItem("adminToken");
+    localStorage.clear(); // Limpia Tokens y Datos de Usuario
     setAutorizado(false);
+    setUsuario(null);
     setMenuMovilAbierto(false);
+    window.location.href = "/"; // Redirige al inicio
   };
 
   // Lógica para ocultar Footer y Navbar en rutas especiales
@@ -169,7 +179,6 @@ const AppContent = () => {
 
     return (
       <div className="flex flex-col">
-        {/* HERO SECTION */}
         <div className="relative min-h-[90vh] flex items-center overflow-hidden">
           <div className="bg-orb top-[-200px] right-[-100px] bg-emerald-200" />
           <div
@@ -263,7 +272,6 @@ const AppContent = () => {
           </section>
         </div>
 
-        {/* SECCIÓN DEL JUEGO: JAULA INTERACTIVA */}
         <section className="py-20 relative bg-gradient-to-b from-white via-emerald-50/50 to-white z-10">
           <div className="container mx-auto px-6">
             <JaulaInteractiva avesDisponibles={avesJuego} />
@@ -323,12 +331,48 @@ const AppContent = () => {
 
             <div className="w-px h-6 bg-slate-200 mx-2" />
 
-            <Link
-              to="/admin"
-              className={`px-6 py-3 rounded-2xl text-xs font-black no-underline transition-all ${autorizado ? "bg-slate-900 text-white shadow-xl hover:bg-slate-800" : "bg-white text-slate-500 border border-slate-200 hover:border-emerald-500 hover:text-emerald-500"}`}
-            >
-              {autorizado ? "PANEL" : "ADMIN"}
-            </Link>
+            {/* SECCIÓN DE USUARIO DINÁMICA */}
+            {usuario ? (
+              <div className="flex items-center gap-4 group relative">
+                <div className="flex items-center gap-3 bg-white/50 border border-slate-200 py-1.5 pl-1.5 pr-4 rounded-full shadow-sm">
+                  <img
+                    src={usuario.foto}
+                    alt="User"
+                    className="w-8 h-8 rounded-full border-2 border-emerald-500 object-cover"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">
+                      Hola
+                    </span>
+                    <span className="text-xs font-bold text-slate-800 leading-none truncate max-w-[80px]">
+                      {usuario.nombre.split(" ")[0]}
+                    </span>
+                  </div>
+                  <button
+                    onClick={cerrarSesion}
+                    title="Cerrar Sesión"
+                    className="ml-2 p-1.5 text-rose-500 hover:bg-rose-50 rounded-full transition-colors"
+                  >
+                    <LogOut size={16} />
+                  </button>
+                </div>
+                {usuario.rol === "admin" && (
+                  <Link
+                    to="/admin"
+                    className="p-2 bg-slate-900 text-white rounded-xl hover:bg-emerald-600 transition-all shadow-lg"
+                  >
+                    <ShieldCheck size={18} />
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <Link
+                to="/admin"
+                className="px-6 py-3 rounded-2xl text-xs font-black no-underline transition-all bg-white text-slate-500 border border-slate-200 hover:border-emerald-500 hover:text-emerald-500 flex items-center gap-2"
+              >
+                <User size={14} /> ENTRAR
+              </Link>
+            )}
           </div>
 
           {/* Botón Menú Móvil */}
@@ -341,9 +385,9 @@ const AppContent = () => {
         </div>
       </nav>
 
-      {/* MENU MÓVIL (SIDEBAR / DRAWER) */}
+      {/* MENU MÓVIL (SIDEBAR) */}
       <div
-        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[105] transition-opacity duration-300 lg:hidden ${menuMovilAbierto ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[105] transition-opacity duration-300 lg:hidden ${menuMovilAbierto ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         onClick={() => setMenuMovilAbierto(false)}
       />
 
@@ -363,44 +407,78 @@ const AppContent = () => {
             </button>
           </div>
 
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-5">
+            {usuario && (
+              <div className="flex items-center gap-4 mb-6 p-4 bg-white/5 rounded-2xl border border-white/10">
+                <img
+                  src={usuario.foto}
+                  alt="Me"
+                  className="w-14 h-14 rounded-full border-2 border-emerald-400"
+                />
+                <div>
+                  <p className="text-white font-bold m-0">{usuario.nombre}</p>
+                  <p className="text-emerald-400 text-xs font-bold uppercase m-0">
+                    {usuario.rol}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {[
-              { name: "Inicio", to: "/", icon: <Home size={24} /> },
-              { name: "Ejemplares", to: "/aves", icon: <Bird size={24} /> },
+              { name: "Inicio", to: "/", icon: <Home size={22} /> },
+              { name: "Ejemplares", to: "/aves", icon: <Bird size={22} /> },
               {
                 name: "Tienda",
                 to: "/tienda",
-                icon: <ShoppingBag size={24} />,
+                icon: <ShoppingBag size={22} />,
               },
-              { name: "Sorteos", to: "/sorteos", icon: <Ticket size={24} /> },
+              { name: "Sorteos", to: "/sorteos", icon: <Ticket size={22} /> },
               {
                 name: "Academia",
                 to: "/cuidados",
-                icon: <BookOpen size={24} />,
+                icon: <BookOpen size={22} />,
               },
             ].map((item, i) => (
               <Link
                 key={i}
                 to={item.to}
                 onClick={() => setMenuMovilAbierto(false)}
-                className="group flex items-center gap-4 text-3xl font-bold text-slate-300 no-underline hover:text-white transition-colors py-2"
+                className="flex items-center gap-4 text-2xl font-bold text-slate-300 no-underline hover:text-white transition-colors"
               >
-                <span className="text-emerald-500/50 group-hover:text-emerald-400 transition-colors">
-                  {item.icon}
-                </span>
+                <span className="text-emerald-500/50">{item.icon}</span>
                 {item.name}
               </Link>
             ))}
           </div>
         </div>
 
-        <Link
-          to="/admin"
-          onClick={() => setMenuMovilAbierto(false)}
-          className="w-full py-5 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl text-center font-black text-white text-lg no-underline shadow-lg shadow-emerald-900/20 active:scale-95 transition-transform"
-        >
-          {autorizado ? "IR AL PANEL" : "ACCESO ADMIN"}
-        </Link>
+        <div className="space-y-4">
+          {usuario ? (
+            <button
+              onClick={cerrarSesion}
+              className="w-full py-5 bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-2xl font-black flex items-center justify-center gap-3 active:scale-95 transition-transform"
+            >
+              <LogOut size={20} /> CERRAR SESIÓN
+            </button>
+          ) : (
+            <Link
+              to="/admin"
+              onClick={() => setMenuMovilAbierto(false)}
+              className="w-full py-5 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl text-center font-black text-white text-lg no-underline shadow-lg active:scale-95 transition-transform block"
+            >
+              ACCESO
+            </Link>
+          )}
+          {usuario?.rol === "admin" && (
+            <Link
+              to="/admin"
+              onClick={() => setMenuMovilAbierto(false)}
+              className="w-full py-5 bg-white/10 text-white rounded-2xl text-center font-black text-lg no-underline border border-white/10 block"
+            >
+              PANEL DE CONTROL
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* RENDERIZADO DE PÁGINAS */}
@@ -427,7 +505,6 @@ const AppContent = () => {
         </Routes>
       </main>
 
-      {/* BOTÓN DE WHATSAPP */}
       <BotonWhatsApp />
 
       {/* FOOTER */}
@@ -455,13 +532,13 @@ const AppContent = () => {
                 <div className="flex gap-4 pt-2">
                   <a
                     href="#"
-                    className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-emerald-600 hover:text-white hover:border-emerald-500 transition-all hover:-translate-y-1"
+                    className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-emerald-600 hover:text-white transition-all"
                   >
                     <Instagram size={20} />
                   </a>
                   <a
                     href="#"
-                    className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-blue-600 hover:text-white hover:border-blue-500 transition-all hover:-translate-y-1"
+                    className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-blue-600 hover:text-white transition-all"
                   >
                     <Facebook size={20} />
                   </a>
@@ -506,7 +583,7 @@ const AppContent = () => {
 
               <div className="lg:col-span-4 space-y-6">
                 <h4 className="text-sm font-bold uppercase tracking-widest text-emerald-500">
-                  Contacto y Ubicación
+                  Contacto
                 </h4>
                 <div className="space-y-4">
                   <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
@@ -517,17 +594,13 @@ const AppContent = () => {
                       Envíos aéreos disponibles a toda la república.
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-emerald-400 font-bold bg-emerald-500/10 w-fit px-3 py-1.5 rounded-full">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                    Atención Disponible Ahora
-                  </div>
                 </div>
               </div>
             </div>
 
             <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] font-bold tracking-widest text-slate-500 uppercase">
               <p>© {new Date().getFullYear()} CUNA ALADA • CAMPECHE</p>
-              <div className="flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1.5 opacity-60">
                 Creado con{" "}
                 <Heart
                   size={10}
