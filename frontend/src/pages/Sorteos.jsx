@@ -10,7 +10,7 @@ const stripePromise = loadStripe('pk_test_51SFnF0ROWvZ0m785J38J20subms9zeVw92xxs
 // ============================================================================
 // COMPONENTE HIJO: FORMULARIO DE PAGO STRIPE (Debe estar dentro de <Elements>)
 // ============================================================================
-const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSuccess, onCancel }) => {
+const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSuccess }) => {
     const stripe = useStripe();
     const elements = useElements();
     const [procesandoPago, setProcesandoPago] = useState(false);
@@ -23,23 +23,21 @@ const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSucce
             return setErrorStripe("Por favor, selecciona al menos un número en la cuadrícula.");
         }
         if (!stripe || !elements) {
-            return; // Stripe no ha cargado aún
+            return; 
         }
 
         setProcesandoPago(true);
         setErrorStripe(null);
 
         try {
-            // 1. Pedirle al backend que cree la intención de pago (PaymentIntent) por el total
             const resPago = await axios.post('https://cunaalada-kitw.onrender.com/api/sorteos/crear-pago', {
                 sorteoId: sorteo._id,
-                cantidad: numerosSeleccionados.length, // Multiplicador de precio
-                numerosElegidos: numerosSeleccionados // Array de números
+                cantidad: numerosSeleccionados.length,
+                numerosElegidos: numerosSeleccionados 
             });
 
             const { clientSecret } = resPago.data;
 
-            // 2. Confirmar el pago directamente con Stripe usando la tarjeta ingresada
             const result = await stripe.confirmCardPayment(clientSecret, {
                 payment_method: {
                     card: elements.getElement(CardElement),
@@ -52,21 +50,19 @@ const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSucce
             });
 
             if (result.error) {
-                // Error en la tarjeta (fondos insuficientes, declinada, etc)
                 setErrorStripe(result.error.message);
                 setProcesandoPago(false);
             } else {
                 if (result.paymentIntent.status === 'succeeded') {
-                    // 3. Pago exitoso! Avisamos al backend para que guarde los boletos
-                    const resConfirmacion = await axios.post(`https://cunaalada-kitw.onrender.com/api/sorteos/${sorteo._id}/confirmar-compra`, {
+                    await axios.post(`https://cunaalada-kitw.onrender.com/api/sorteos/${sorteo._id}/confirmar-compra`, {
                         nombre: datos.nombre,
                         email: datos.email,
                         telefono: datos.telefono,
-                        numerosBoletos: numerosSeleccionados, // Enviamos el ARRAY de números
+                        numerosBoletos: numerosSeleccionados,
                         idPago: result.paymentIntent.id
                     });
 
-                    onSuccess(numerosSeleccionados); // Ejecutar éxito en el componente padre
+                    onSuccess(numerosSeleccionados); 
                 }
             }
         } catch (error) {
@@ -76,7 +72,6 @@ const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSucce
         }
     };
 
-    // Estilos personalizados para el input de la tarjeta de Stripe
     const cardStyle = {
         style: {
             base: { color: '#334155', fontFamily: '"Inter", sans-serif', fontSize: '16px', '::placeholder': { color: '#94a3b8' } },
@@ -94,7 +89,6 @@ const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSucce
                 <input type="tel" required value={datos.telefono} onChange={e => setDatos({...datos, telefono: e.target.value})} disabled={procesandoPago} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700" placeholder="Teléfono" />
             </div>
 
-            {/* CAJA DE TARJETA DE STRIPE */}
             <div className="mt-4 p-4 rounded-2xl bg-white border-2 border-slate-200 hover:border-emerald-400 transition-colors">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Datos de la Tarjeta</label>
                 <div className="p-2">
@@ -143,9 +137,8 @@ const Sorteos = () => {
     const [sorteos, setSorteos] = useState([]);
     const [loading, setLoading] = useState(true);
     
-    // Estados para el flujo de compra interactivo
     const [modalCompra, setModalCompra] = useState({ show: false, sorteo: null });
-    const [numerosSeleccionados, setNumerosSeleccionados] = useState([]); // AHORA ES UN ARRAY
+    const [numerosSeleccionados, setNumerosSeleccionados] = useState([]); 
     const [datosCliente, setDatosCliente] = useState({ nombre: '', email: '', telefono: '' });
     const [mensajeExito, setMensajeExito] = useState(null);
 
@@ -155,7 +148,6 @@ const Sorteos = () => {
             if (res.data && res.data.length > 0) {
                 setSorteos(res.data);
             } else {
-                // Sorteo de prueba visual si la base de datos está vacía
                 setSorteos([{
                     _id: 'demo-1',
                     premio: 'Agapornis Fisher - Mutación Arlequín Azul',
@@ -176,30 +168,26 @@ const Sorteos = () => {
 
     useEffect(() => {
         cargarSorteos();
-        const interval = setInterval(cargarSorteos, 10000); // Refrescar cada 10s
+        const interval = setInterval(cargarSorteos, 10000); 
         return () => clearInterval(interval);
     }, []);
 
     const abrirModal = (sorteo) => {
         setModalCompra({ show: true, sorteo });
-        setNumerosSeleccionados([]); // Limpiar selección previa
-        setDatosCliente({ nombre: '', email: '', telefono: '' }); // Limpiar datos previos
+        setNumerosSeleccionados([]); 
+        setDatosCliente({ nombre: '', email: '', telefono: '' }); 
     };
 
-    // Lógica para SELECCIONAR MÚLTIPLES NÚMEROS
     const toggleNumero = (n) => {
         setNumerosSeleccionados(prev => {
             if (prev.includes(n)) {
-                // Si ya está seleccionado, lo quitamos del array
                 return prev.filter(num => num !== n);
             } else {
-                // Si no está seleccionado, lo añadimos
                 return [...prev, n];
             }
         });
     };
 
-    // Se ejecuta desde el hijo (FormularioPago) cuando todo sale bien
     const handlePagoExitoso = (boletosComprados) => {
         setMensajeExito(boletosComprados);
         setModalCompra({ show: false, sorteo: null });
@@ -217,10 +205,21 @@ const Sorteos = () => {
     return (
         <div className="min-h-screen relative pb-24 bg-[#F8F9FA] overflow-hidden notranslate" translate="no">
             
-            {/* ESTILOS Y ANIMACIONES CSS */}
+            {/* ESTILOS Y ANIMACIONES CSS MEJORADAS */}
             <style>{`
                 @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
                 .animacion-entrada { animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+                
+                @keyframes popIn {
+                    0% { transform: scale(0.5); opacity: 0; }
+                    70% { transform: scale(1.1); opacity: 1; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+                .pop-in {
+                    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+                    opacity: 0;
+                }
+
                 .barra-brillo {
                     position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
                     background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
@@ -229,50 +228,65 @@ const Sorteos = () => {
                 @keyframes brillo { 100% { left: 200%; } }
                 @keyframes pulse-ring { 0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); } 100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
                 .anim-sorteando { animation: pulse-ring 2s infinite; }
+                
+                /* Scroll elegante para los boletos */
+                .scroll-boletos::-webkit-scrollbar { width: 6px; }
+                .scroll-boletos::-webkit-scrollbar-track { background: transparent; }
+                .scroll-boletos::-webkit-scrollbar-thumb { background: #6ee7b7; border-radius: 10px; }
             `}</style>
 
-            {/* LUCES DE FONDO DECORATIVAS */}
             <div className="absolute top-[10%] left-[-10%] w-96 h-96 bg-emerald-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse" />
             <div className="absolute bottom-[20%] right-[-10%] w-96 h-96 bg-teal-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse" />
 
-            {/* --- PANTALLA DE ÉXITO Y ENTREGA DE MÚLTIPLES BOLETOS --- */}
+            {/* --- PANTALLA DE ÉXITO Y ENTREGA DE MÚLTIPLES BOLETOS (CORREGIDA Z-INDEX 9999) --- */}
             {mensajeExito && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-emerald-900/90 backdrop-blur-md p-4">
-                    <div className="bg-white p-10 md:p-16 rounded-[40px] text-center shadow-2xl max-w-lg w-full animacion-entrada">
-                        <CheckCircle2 size={80} className="text-emerald-500 mx-auto mb-6 animate-bounce" />
-                        <h2 className="text-4xl font-black text-slate-800 mb-2">¡Compra Exitosa!</h2>
-                        <p className="text-slate-500 text-lg mb-6">Tu pago se procesó correctamente. Mucha suerte.</p>
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-emerald-900/90 backdrop-blur-md p-4">
+                    <div className="bg-white p-8 md:p-12 rounded-[40px] text-center shadow-2xl max-w-lg w-full animacion-entrada max-h-[90vh] flex flex-col">
                         
-                        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-3xl p-8 mb-8 relative overflow-hidden">
-                            <div className="absolute -right-4 -top-4 opacity-10 text-emerald-500"><Ticket size={100}/></div>
-                            <p className="text-emerald-800 font-bold uppercase tracking-widest text-sm mb-4">
+                        <div className="flex-shrink-0">
+                            <CheckCircle2 size={64} className="text-emerald-500 mx-auto mb-4 animate-bounce" />
+                            <h2 className="text-3xl font-black text-slate-800 mb-2">¡Compra Exitosa!</h2>
+                            <p className="text-slate-500 text-sm mb-6">Tu pago se procesó correctamente. Mucha suerte.</p>
+                        </div>
+                        
+                        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-3xl p-6 mb-6 relative overflow-hidden flex flex-col flex-1 min-h-[150px] max-h-[40vh]">
+                            <div className="absolute -right-4 -top-4 opacity-10 text-emerald-500 pointer-events-none"><Ticket size={100}/></div>
+                            <p className="text-emerald-800 font-bold uppercase tracking-widest text-xs mb-4 flex-shrink-0">
                                 {mensajeExito.length > 1 ? 'Tus números oficiales son:' : 'Tu número oficial es:'}
                             </p>
-                            <div className="text-4xl md:text-5xl font-black text-emerald-600 flex flex-wrap justify-center gap-3">
-                                {mensajeExito.map(n => (
-                                    <span key={n} className="bg-white px-4 py-2 rounded-xl border border-emerald-200 shadow-sm">
-                                        #{n}
-                                    </span>
-                                ))}
+                            
+                            <div className="overflow-y-auto scroll-boletos pr-2 flex-1">
+                                <div className="flex flex-wrap justify-center gap-2">
+                                    {mensajeExito.map((n, index) => (
+                                        <span 
+                                            key={n} 
+                                            className="bg-white text-xl md:text-2xl font-black text-emerald-600 px-4 py-2 rounded-xl border border-emerald-200 shadow-sm pop-in"
+                                            style={{ animationDelay: `${index * 0.05}s` }} /* Animación escalonada */
+                                        >
+                                            #{n}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
-                        <button 
-                            onClick={() => setMensajeExito(null)} 
-                            className="w-full bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-emerald-600 transition-all shadow-lg"
-                        >
-                            Entendido
-                        </button>
+                        <div className="flex-shrink-0">
+                            <button 
+                                onClick={() => setMensajeExito(null)} 
+                                className="w-full bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-emerald-600 transition-all shadow-lg"
+                            >
+                                Entendido
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
 
-            {/* --- MODAL DE SELECCIÓN DE NÚMEROS Y PAGO --- */}
+            {/* --- MODAL DE SELECCIÓN DE NÚMEROS Y PAGO (CORREGIDA Z-INDEX 9999) --- */}
             {modalCompra.show && modalCompra.sorteo && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
                     <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto relative animacion-entrada">
                         
-                        {/* Cabecera del modal */}
                         <div className="bg-slate-50 p-6 md:p-8 border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
                             <div>
                                 <h3 className="text-2xl font-black text-slate-800">Adquirir Boletos</h3>
@@ -284,7 +298,6 @@ const Sorteos = () => {
                         </div>
 
                         <div className="p-6 md:p-10 grid lg:grid-cols-2 gap-12">
-                            {/* Lado Izquierdo: Cuadrícula de Números MULTIPLE */}
                             <div>
                                 <div className="flex justify-between items-end mb-4">
                                     <h4 className="text-xl font-black text-slate-800 flex items-center gap-2">
@@ -297,7 +310,7 @@ const Sorteos = () => {
                                 </div>
                                 <p className="text-slate-500 text-sm mb-6">Haz clic en los lugares de la cuadrícula que deseas comprar. Puedes elegir varios.</p>
                                 
-                                <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 bg-slate-50 p-4 rounded-3xl border border-slate-100 max-h-[400px] overflow-y-auto">
+                                <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 bg-slate-50 p-4 rounded-3xl border border-slate-100 max-h-[400px] overflow-y-auto scroll-boletos">
                                     {[...Array(modalCompra.sorteo.totalBoletos)].map((_, i) => {
                                         const n = i + 1;
                                         const ocupado = modalCompra.sorteo.boletosVendidos.some(b => b.numeroBoleto === n);
@@ -328,7 +341,6 @@ const Sorteos = () => {
                                 </div>
                             </div>
 
-                            {/* Lado Derecho: Formulario y Pago con STRIPE ELEMENTS */}
                             <div>
                                 <h4 className="text-xl font-black text-slate-800 mb-2 flex items-center gap-2">
                                     <span className="bg-emerald-100 text-emerald-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span> 
@@ -336,7 +348,6 @@ const Sorteos = () => {
                                 </h4>
                                 <p className="text-slate-500 text-sm mb-6">Completa tu información y paga de forma segura.</p>
                                 
-                                {/* Envolvemos el formulario en el Provider de Stripe */}
                                 <Elements stripe={stripePromise}>
                                     <FormularioPago 
                                         sorteo={modalCompra.sorteo}
@@ -354,7 +365,6 @@ const Sorteos = () => {
 
             <div className="container mx-auto px-6 py-12 relative z-10">
                 
-                {/* ENCABEZADO */}
                 <div className="text-center mb-20 animacion-entrada" style={{ animationDelay: '0.1s' }}>
                     <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-full border border-emerald-100 text-emerald-700 font-extrabold text-xs uppercase tracking-widest mb-6 shadow-sm hover:shadow-md transition-all">
                         <Sparkles size={16} className="text-emerald-500 animate-pulse" /> Sorteos Exclusivos
@@ -367,7 +377,6 @@ const Sorteos = () => {
                     </p>
                 </div>
 
-                {/* LISTA DE SORTEOS */}
                 <div className="grid gap-12 max-w-5xl mx-auto">
                     {sorteos.map((sorteo, index) => {
                         const vendidos = sorteo.boletosVendidos?.length || 0;
@@ -380,14 +389,12 @@ const Sorteos = () => {
                                 className="bg-white/80 backdrop-blur-xl rounded-[40px] p-6 md:p-10 flex flex-col lg:flex-row gap-10 shadow-2xl border border-white/60 relative overflow-hidden group animacion-entrada hover:shadow-emerald-900/10 transition-all duration-500"
                                 style={{ animationDelay: `${0.2 + (index * 0.1)}s` }}
                             >
-                                {/* Etiqueta de Estado Flotante */}
                                 {sorteo.estado === 'ACTIVO' && !estaLleno && (
                                     <div className="absolute top-0 right-10 bg-emerald-500 text-white px-6 py-2 rounded-b-2xl font-black text-xs tracking-widest shadow-[0_4px_15px_rgba(16,185,129,0.3)] flex items-center gap-2 z-20 transition-transform duration-300 group-hover:translate-y-1">
                                         <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div> EN VIVO
                                     </div>
                                 )}
 
-                                {/* IMAGEN */}
                                 <div className="w-full lg:w-5/12 relative rounded-[32px] overflow-hidden aspect-square lg:aspect-auto lg:h-[450px] shadow-inner bg-slate-100 flex items-center justify-center">
                                     <img 
                                         src={sorteo.fotoUrl && !sorteo.fotoUrl.startsWith('http') ? `https://cunaalada-kitw.onrender.com${sorteo.fotoUrl}` : (sorteo.fotoUrl || '/portada.png')} 
@@ -406,7 +413,6 @@ const Sorteos = () => {
                                     </div>
                                 </div>
 
-                                {/* INFORMACIÓN */}
                                 <div className="w-full lg:w-7/12 flex flex-col justify-center relative z-20">
                                     <h3 className="text-3xl md:text-4xl font-black text-slate-800 mb-4 leading-tight group-hover:text-emerald-700 transition-colors duration-300">{sorteo.premio}</h3>
                                     <p className="text-slate-500 mb-8 text-lg leading-relaxed">{sorteo.descripcion}</p>
@@ -420,7 +426,6 @@ const Sorteos = () => {
                                         </div>
                                     </div>
 
-                                    {/* ESTADOS DEL SORTEO */}
                                     {sorteo.estado === 'ACTIVO' && !estaLleno ? (
                                         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(16,185,129,0.08)] transition-shadow duration-500">
                                             <div className="mb-8">
@@ -453,7 +458,6 @@ const Sorteos = () => {
                                             </button>
                                         </div>
                                     ) : sorteo.estado === 'LLENO' || estaLleno ? (
-                                        // ANIMACIÓN DE "SORTEANDO" (Cuando se llena pero el admin no ha revelado)
                                         <div className="bg-indigo-900 text-white p-8 rounded-3xl text-center shadow-2xl relative overflow-hidden">
                                             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30"></div>
                                             <div className="w-20 h-20 mx-auto bg-indigo-500 rounded-full flex items-center justify-center anim-sorteando mb-6 relative z-10">
@@ -463,7 +467,6 @@ const Sorteos = () => {
                                             <p className="text-indigo-200 relative z-10">El sorteo está preparando la selección aleatoria. Mantente atento, el ganador se revelará aquí pronto.</p>
                                         </div>
                                     ) : (
-                                        // ESTADO FINALIZADO
                                         <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 p-8 rounded-3xl text-center shadow-inner relative overflow-hidden">
                                             <div className="absolute -right-6 -top-6 text-amber-500/10"><Trophy size={120} /></div>
                                             <Trophy size={56} className="mx-auto text-amber-500 mb-4 relative z-10 drop-shadow-md" />
