@@ -3,13 +3,14 @@ import axios from 'axios';
 import { 
   Plus, Save, Bird, Trash2, Edit2, 
   LogOut, Package, Hash, Search, LayoutDashboard, X, 
-  ChevronRight, AlertCircle, Tag, Dna, Sparkles, Archive, CheckCircle, User,
-  Check, XCircle, Copy, AlertTriangle, Upload, Image as ImageIcon
+  ChevronRight, AlertCircle, Tag, Dna, Archive, CheckCircle, User,
+  Check, XCircle, Copy, AlertTriangle, Upload, Image as ImageIcon, Ticket, Trophy
 } from 'lucide-react';
 
 const AdminPanel = ({ cerrarSesion }) => {
   const [seccion, setSeccion] = useState('aves');
   const [lista, setLista] = useState([]);
+  const [listaAvesDisponibles, setListaAvesDisponibles] = useState([]); // NUEVO: Para el select de Sorteos
   const [busqueda, setBusqueda] = useState('');
   
   // Estado para notificaciones
@@ -22,9 +23,9 @@ const AdminPanel = ({ cerrarSesion }) => {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [idEditar, setIdEditar] = useState(null);
 
-  // --- NUEVO: ESTADO PARA EL ARCHIVO DE IMAGEN ---
+  // --- ESTADO PARA EL ARCHIVO DE IMAGEN ---
   const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null); // Para ver la foto antes de subirla
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   // Estado inicial AVES
   const initialAve = { 
@@ -39,8 +40,14 @@ const AdminPanel = ({ cerrarSesion }) => {
     stock: '', descripcion: '', enPromocion: false 
   };
 
+  // NUEVO: Estado inicial SORTEOS
+  const initialSorteo = {
+    aveId: '', titulo: '', descripcion: '', precioBoleto: '', totalBoletos: ''
+  };
+
   const [formAve, setFormAve] = useState(initialAve);
   const [formProd, setFormProd] = useState(initialProd);
+  const [formSorteo, setFormSorteo] = useState(initialSorteo);
 
   const showToast = (message, type = 'success') => {
     setNotificacion({ show: true, message, type });
@@ -51,9 +58,20 @@ const AdminPanel = ({ cerrarSesion }) => {
 
   const cargarDatos = async () => {
     try {
-      const endpoint = seccion === 'aves' ? 'aves' : 'productos';
-      const res = await axios.get(`https://cunaalada-kitw.onrender.com/api/${endpoint}`);
-      setLista(res.data);
+      if (seccion === 'aves') {
+        const res = await axios.get(`https://cunaalada-kitw.onrender.com/api/aves`);
+        setLista(res.data);
+      } else if (seccion === 'productos') {
+        const res = await axios.get(`https://cunaalada-kitw.onrender.com/api/productos`);
+        setLista(res.data);
+      } else if (seccion === 'sorteos') {
+        const resSorteos = await axios.get(`https://cunaalada-kitw.onrender.com/api/sorteos`);
+        setLista(resSorteos.data);
+        
+        // Cargar aves disponibles para el menú desplegable del sorteo
+        const resAves = await axios.get(`https://cunaalada-kitw.onrender.com/api/aves`);
+        setListaAvesDisponibles(resAves.data.filter(ave => ave.estado === 'disponible'));
+      }
     } catch (error) { 
       console.error("Error cargando datos:", error);
       showToast('Error de conexión con el servidor', 'error');
@@ -71,7 +89,7 @@ const AdminPanel = ({ cerrarSesion }) => {
     setIdEditar(null);
     setFormAve(initialAve);
     setFormProd(initialProd);
-    // Limpiamos la imagen
+    setFormSorteo(initialSorteo);
     setArchivoSeleccionado(null);
     setPreviewUrl(null);
   };
@@ -86,12 +104,15 @@ const AdminPanel = ({ cerrarSesion }) => {
     setFormProd({ ...formProd, [e.target.name]: value });
   };
 
+  const handleChangeSorteo = (e) => {
+    setFormSorteo({ ...formSorteo, [e.target.name]: e.target.value });
+  };
+
   // --- MANEJADOR DE SELECCIÓN DE IMAGEN ---
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setArchivoSeleccionado(file);
-      // Crear una URL temporal para mostrar la previsualización
       setPreviewUrl(URL.createObjectURL(file));
     }
   };
@@ -103,7 +124,6 @@ const AdminPanel = ({ cerrarSesion }) => {
     // LOGICA PREVIEW:
     const fotoExistente = item.foto || item.fotoUrl;
     if (fotoExistente) {
-        // Si ya tiene http (vieja) o es local (nueva)
         if (fotoExistente.startsWith('http')) {
              setPreviewUrl(fotoExistente);
         } else {
@@ -138,7 +158,7 @@ const AdminPanel = ({ cerrarSesion }) => {
     }
   };
 
-  // --- GUARDAR CON FORMDATA ---
+  // --- GUARDAR AVES Y PRODUCTOS (CON FORMDATA) ---
   const guardar = async (e) => {
     e.preventDefault();
     const endpoint = seccion === 'aves' ? 'aves' : 'productos';
@@ -169,6 +189,32 @@ const AdminPanel = ({ cerrarSesion }) => {
     } catch (error) { 
       console.error(error);
       showToast('Error al guardar los datos', 'error');
+    }
+  };
+
+  // --- NUEVO: GUARDAR SORTEO ---
+  const guardarSorteo = async (e) => {
+    e.preventDefault();
+    try {
+        await axios.post(`https://cunaalada-kitw.onrender.com/api/sorteos`, formSorteo);
+        showToast('¡Sorteo programado exitosamente!');
+        resetForms();
+        cargarDatos();
+    } catch (error) { 
+        console.error(error);
+        showToast('Error al crear el sorteo', 'error'); 
+    }
+  };
+
+  // --- NUEVO: REVELAR GANADOR SORTEO ---
+  const revelarGanador = async (id) => {
+    if(!window.confirm("¿Estás seguro de elegir al ganador ahora? Esta acción no se puede deshacer y avisará a los clientes.")) return;
+    try {
+        await axios.post(`https://cunaalada-kitw.onrender.com/api/sorteos/${id}/revelar`);
+        showToast('¡Tenemos un ganador! La magia ha ocurrido.', 'success');
+        cargarDatos();
+    } catch (error) { 
+        showToast('Error al procesar el ganador', 'error'); 
     }
   };
 
@@ -212,8 +258,10 @@ const AdminPanel = ({ cerrarSesion }) => {
                            (item.mutacion && item.mutacion.toLowerCase().includes(termino)) ||
                            (item.nombreAsignado && item.nombreAsignado.toLowerCase().includes(termino)) ||
                            (item.propietario && item.propietario.toLowerCase().includes(termino));
-    } else {
+    } else if (seccion === 'productos') {
         coincideBusqueda = (item.nombre && item.nombre.toLowerCase().includes(termino));
+    } else if (seccion === 'sorteos') {
+        coincideBusqueda = (item.titulo && item.titulo.toLowerCase().includes(termino));
     }
 
     if (seccion === 'aves') {
@@ -228,9 +276,13 @@ const AdminPanel = ({ cerrarSesion }) => {
     return coincideBusqueda;
   });
 
-  const mainColor = seccion === 'aves' ? 'emerald' : 'blue';
-  const mainGradient = seccion === 'aves' ? 'from-emerald-500 to-teal-500' : 'from-blue-500 to-indigo-500';
-  const shadowColor = seccion === 'aves' ? 'shadow-emerald-200' : 'shadow-blue-200';
+  // Colores dinámicos dependiendo de la sección
+  const colores = {
+      aves: { main: 'emerald', grad: 'from-emerald-500 to-teal-500', shadow: 'shadow-emerald-200' },
+      productos: { main: 'blue', grad: 'from-blue-500 to-indigo-500', shadow: 'shadow-blue-200' },
+      sorteos: { main: 'violet', grad: 'from-violet-500 to-fuchsia-500', shadow: 'shadow-violet-200' }
+  };
+  const theme = colores[seccion];
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden notranslate" translate="no">
@@ -279,7 +331,7 @@ const AdminPanel = ({ cerrarSesion }) => {
       {/* SIDEBAR */}
       <aside className="w-72 bg-slate-900 text-white flex flex-col shadow-2xl z-20">
         <div className="p-8 flex items-center gap-4 border-b border-slate-800/50">
-          <div className={`bg-gradient-to-br ${mainGradient} p-2.5 rounded-xl shadow-lg`}>
+          <div className={`bg-gradient-to-br ${theme.grad} p-2.5 rounded-xl shadow-lg`}>
             <LayoutDashboard size={24} className="text-white"/>
           </div>
           <div>
@@ -310,6 +362,18 @@ const AdminPanel = ({ cerrarSesion }) => {
             </div>
             {seccion === 'productos' && <ChevronRight size={16} />}
           </button>
+
+          {/* NUEVO BOTÓN: SORTEOS */}
+          <button 
+            onClick={() => setSeccion('sorteos')}
+            className={`group w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all duration-300 ${seccion === 'sorteos' ? 'bg-violet-600 text-white shadow-xl shadow-violet-900/40 translate-x-1' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+          >
+            <div className="flex items-center gap-4">
+              <Ticket size={22} className={seccion === 'sorteos' ? 'animate-pulse' : ''}/>
+              <span className="font-semibold text-sm">Gestión de Sorteos</span>
+            </div>
+            {seccion === 'sorteos' && <ChevronRight size={16} />}
+          </button>
         </nav>
 
         <div className="p-6 border-t border-slate-800/50">
@@ -327,7 +391,7 @@ const AdminPanel = ({ cerrarSesion }) => {
         <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-10 shadow-sm z-10">
           <div>
             <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
-              {seccion === 'aves' ? 'Inventario de Ejemplares' : 'Inventario de Productos'}
+              {seccion === 'aves' ? 'Inventario de Ejemplares' : seccion === 'productos' ? 'Inventario de Productos' : 'Eventos y Sorteos'}
             </h2>
             <p className="text-xs text-slate-400 font-medium mt-1">
               {listaFiltrada.length} registros mostrados
@@ -336,13 +400,13 @@ const AdminPanel = ({ cerrarSesion }) => {
           
           <div className="flex items-center gap-4">
              <div className="relative group">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors pointer-events-none">
+                <span className={`absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-${theme.main}-500 transition-colors pointer-events-none`}>
                     <Search size={18}/>
                 </span>
                 <input 
                   type="text" 
-                  placeholder={seccion === 'aves' ? "Buscar por especie, nombre, anillo..." : "Buscar producto..."}
-                  className="pl-11 pr-5 py-2.5 bg-slate-50 border border-slate-200 rounded-full text-sm focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 outline-none w-72 transition-all shadow-sm group-focus-within:shadow-md group-focus-within:bg-white"
+                  placeholder={seccion === 'aves' ? "Buscar por especie, nombre, anillo..." : seccion === 'productos' ? "Buscar producto..." : "Buscar sorteo..."}
+                  className="pl-11 pr-5 py-2.5 bg-slate-50 border border-slate-200 rounded-full text-sm focus:ring-2 focus:ring-slate-200 outline-none w-72 transition-all shadow-sm group-focus-within:shadow-md group-focus-within:bg-white"
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
                 />
@@ -359,10 +423,10 @@ const AdminPanel = ({ cerrarSesion }) => {
               <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 sticky top-6">
                 <div className="flex justify-between items-center mb-8">
                   <h3 className={`font-bold text-xl flex items-center gap-3 text-slate-700`}>
-                    <span className={`p-2 rounded-lg bg-${mainColor}-50 text-${mainColor}-500`}>
+                    <span className={`p-2 rounded-lg bg-${theme.main}-50 text-${theme.main}-500`}>
                       {modoEdicion ? <Edit2 size={20}/> : <Plus size={20}/>}
                     </span>
-                    {modoEdicion ? 'Editar Registro' : 'Nuevo Registro'}
+                    {modoEdicion ? 'Editar Registro' : seccion === 'sorteos' ? 'Configurar Sorteo' : 'Nuevo Registro'}
                   </h3>
                   {modoEdicion && (
                     <button onClick={resetForms} className="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-slate-500 flex items-center gap-1.5 transition-colors">
@@ -372,90 +436,67 @@ const AdminPanel = ({ cerrarSesion }) => {
                   )}
                 </div>
 
-                <form onSubmit={guardar} encType="multipart/form-data">
+                <form onSubmit={seccion === 'sorteos' ? guardarSorteo : guardar} encType={seccion !== 'sorteos' ? "multipart/form-data" : ""}>
                   <div className="space-y-6">
                       
-                      {/* --- SECCIÓN NUEVA DE UPLOAD DE IMAGEN --- */}
-                      <div className="space-y-3">
-                         <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Fotografía</label>
-                         <div className="w-full relative">
-                            <input 
-                              type="file" 
-                              accept="image/*"
-                              onChange={handleFileChange}
-                              className="hidden" 
-                              id="file-upload"
-                            />
-                            <label htmlFor="file-upload" className={`cursor-pointer w-full h-48 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 transition-all overflow-hidden ${previewUrl ? 'border-emerald-400 bg-white' : 'border-slate-300 hover:border-emerald-400 hover:bg-slate-50'}`}>
-                                {previewUrl ? (
-                                    <div className="relative w-full h-full group">
-                                        <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <span className="text-white font-bold text-xs flex items-center gap-2">
-                                                <Upload size={16}/> Cambiar foto
-                                            </span>
+                      {/* --- SECCIÓN DE FOTO SÓLO PARA AVES Y PRODUCTOS --- */}
+                      {seccion !== 'sorteos' && (
+                          <div className="space-y-3">
+                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Fotografía</label>
+                             <div className="w-full relative">
+                                <input 
+                                  type="file" 
+                                  accept="image/*"
+                                  onChange={handleFileChange}
+                                  className="hidden" 
+                                  id="file-upload"
+                                />
+                                <label htmlFor="file-upload" className={`cursor-pointer w-full h-48 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 transition-all overflow-hidden ${previewUrl ? `border-${theme.main}-400 bg-white` : `border-slate-300 hover:border-${theme.main}-400 hover:bg-slate-50`}`}>
+                                    {previewUrl ? (
+                                        <div className="relative w-full h-full group">
+                                            <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <span className="text-white font-bold text-xs flex items-center gap-2">
+                                                    <Upload size={16}/> Cambiar foto
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-1">
-                                            <ImageIcon size={24}/>
-                                        </div>
-                                        <span className="text-sm font-bold text-slate-500">Subir Imagen</span>
-                                        <span className="text-[10px] text-slate-400">JPG, PNG o WEBP</span>
-                                    </>
-                                )}
-                            </label>
-                         </div>
-                      </div>
+                                    ) : (
+                                        <>
+                                            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-1">
+                                                <ImageIcon size={24}/>
+                                            </div>
+                                            <span className="text-sm font-bold text-slate-500">Subir Imagen</span>
+                                            <span className="text-[10px] text-slate-400">JPG, PNG o WEBP</span>
+                                        </>
+                                    )}
+                                </label>
+                             </div>
+                          </div>
+                      )}
 
-                      {seccion === 'aves' ? (
+                      {/* --- INPUTS DE AVES --- */}
+                      {seccion === 'aves' && (
                         <>
                           <div className="space-y-3">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Clasificación</label>
                             
                             <div className="relative group">
-                                <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 z-10">
-                                   <Bird size={18}/>
-                                </span>
-                                <input 
-                                  name="especie" 
-                                  value={formAve.especie} 
-                                  onChange={handleChangeAve} 
-                                  required 
-                                  className="input-modern !pl-12" 
-                                  placeholder="Especie (Ej. Agapornis, Ninfa)" 
-                                />
+                                <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 z-10"><Bird size={18}/></span>
+                                <input name="especie" value={formAve.especie} onChange={handleChangeAve} required className="input-modern !pl-12" placeholder="Especie (Ej. Agapornis, Ninfa)" />
                             </div>
 
                             <div className="relative group">
-                                <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 z-10">
-                                   <Dna size={18}/>
-                                </span>
-                                <input 
-                                  name="mutacion" 
-                                  value={formAve.mutacion} 
-                                  onChange={handleChangeAve} 
-                                  required 
-                                  className="input-modern !pl-12" 
-                                  placeholder="Mutación (Ej. Lutino, Azul)" 
-                                />
+                                <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 z-10"><Dna size={18}/></span>
+                                <input name="mutacion" value={formAve.mutacion} onChange={handleChangeAve} required className="input-modern !pl-12" placeholder="Mutación (Ej. Lutino, Azul)" />
                             </div>
                           </div>
 
                           <div className="space-y-3">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Identificación</label>
                             <div className="relative group">
-                                <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 z-10">
-                                    <Hash size={18}/>
-                                </span>
-                                <input 
-                                  name="anillo" 
-                                  value={formAve.anillo} 
-                                  onChange={handleChangeAve} 
-                                  className="input-modern !pl-12 font-medium" 
-                                  placeholder="Código del anillo..." 
-                                />
+                                <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 z-10"><Hash size={18}/></span>
+                                <input name="anillo" value={formAve.anillo} onChange={handleChangeAve} className="input-modern !pl-12 font-medium" placeholder="Código del anillo..." />
                             </div>
                           </div>
 
@@ -497,9 +538,11 @@ const AdminPanel = ({ cerrarSesion }) => {
                             </div>
                           </label>
                         </>
-                      ) : (
+                      )}
+
+                      {/* --- INPUTS DE PRODUCTOS --- */}
+                      {seccion === 'productos' && (
                         <>
-                          {/* CAMPOS DE PRODUCTOS */}
                           <input name="nombre" value={formProd.nombre} onChange={handleChangeProd} required className="input-modern" placeholder="Nombre del Producto" />
                           <select name="categoria" value={formProd.categoria} onChange={handleChangeProd} required className="input-modern bg-white cursor-pointer">
                             <option value="">Seleccionar Categoría...</option>
@@ -533,9 +576,42 @@ const AdminPanel = ({ cerrarSesion }) => {
                         </>
                       )}
 
-                      <button type="submit" className={`w-full py-4 rounded-xl font-bold text-white shadow-xl transform active:scale-[0.98] transition-all flex justify-center items-center gap-3 bg-gradient-to-r ${mainGradient} ${shadowColor}`}>
+                      {/* --- NUEVO: INPUTS DE SORTEOS --- */}
+                      {seccion === 'sorteos' && (
+                        <>
+                          <div className="space-y-3">
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Seleccionar Ave Premio</label>
+                            <select name="aveId" value={formSorteo.aveId} onChange={handleChangeSorteo} required className="input-modern bg-white">
+                              <option value="">-- Elige un ejemplar disponible --</option>
+                              {listaAvesDisponibles.map(ave => (
+                                <option key={ave._id} value={ave._id}>{ave.especie} {ave.mutacion} - Anillo: {ave.anillo}</option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Detalles del Evento</label>
+                            <input name="titulo" value={formSorteo.titulo} onChange={handleChangeSorteo} required className="input-modern" placeholder="Título Épico (Ej. Gran Sorteo Primavera)" />
+                          </div>
+
+                          <textarea name="descripcion" value={formSorteo.descripcion} onChange={handleChangeSorteo} className="input-modern" rows="3" placeholder="Descripción de las reglas..."></textarea>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Precio Boleto ($)</label>
+                                <input type="number" name="precioBoleto" value={formSorteo.precioBoleto} onChange={handleChangeSorteo} required className="input-modern" placeholder="0" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Total Boletos</label>
+                                <input type="number" name="totalBoletos" value={formSorteo.totalBoletos} onChange={handleChangeSorteo} required className="input-modern" placeholder="Ej. 50" />
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      <button type="submit" className={`w-full py-4 rounded-xl font-bold text-white shadow-xl transform active:scale-[0.98] transition-all flex justify-center items-center gap-3 bg-gradient-to-r ${theme.grad} ${theme.shadow}`}>
                         <Save size={20}/>
-                        <span className="tracking-wide">{modoEdicion ? 'Actualizar Datos' : 'Guardar Registro'}</span>
+                        <span className="tracking-wide">{modoEdicion ? 'Actualizar Datos' : seccion === 'sorteos' ? 'Crear Sorteo' : 'Guardar Registro'}</span>
                       </button>
                   </div>
                 </form>
@@ -567,11 +643,13 @@ const AdminPanel = ({ cerrarSesion }) => {
                     <table className="w-full text-left border-collapse">
                       <thead className="bg-slate-50/80 text-slate-500 font-bold uppercase text-[11px] tracking-wider border-b border-slate-100">
                         <tr>
-                          <th className="px-8 py-5">Foto</th>
+                          {seccion !== 'sorteos' && <th className="px-8 py-5">Foto</th>}
                           <th className="px-6 py-5">
-                            {seccion === 'aves' ? 'Especie y Mutación' : 'Producto'}
+                            {seccion === 'aves' ? 'Especie y Mutación' : seccion === 'productos' ? 'Producto' : 'Premio / Evento'}
                           </th>
-                          <th className="px-6 py-5">Precio</th>
+                          <th className="px-6 py-5">
+                             {seccion === 'sorteos' ? 'Progreso y Estado' : 'Precio'}
+                          </th>
                           <th className="px-6 py-5 text-right">Acciones</th>
                         </tr>
                       </thead>
@@ -591,106 +669,158 @@ const AdminPanel = ({ cerrarSesion }) => {
                           </tr>
                         ) : listaFiltrada.map((item) => (
                           <tr key={item._id} className="group hover:bg-slate-50/80 transition-colors duration-200">
-                            <td className="px-8 py-5">
-                              <div className="w-16 h-16 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-white group-hover:shadow-md transition-all">
-                                
-                                {/* -------------------------------------------------------------
-                                    AQUÍ ESTÁ LA CORRECCIÓN: LÓGICA INTELIGENTE DE FOTO
-                                    Detecta si la ruta es local (ej: /uploads/...) y le pega
-                                    el servidor localhost:5000. Si falla, usa /portada.png
-                                ------------------------------------------------------------- */}
-                                <img 
-                                    src={
-                                        (item.foto || item.fotoUrl)
-                                        ? ( (item.foto || item.fotoUrl).startsWith('http') 
-                                            ? (item.foto || item.fotoUrl) 
-                                            : `https://cunaalada-kitw.onrender.com${item.foto || item.fotoUrl}` )
-                                        : '/portada.png'
-                                    }
-                                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" 
-                                    alt="img"
-                                    onError={(e) => {
-                                        e.target.onerror = null; 
-                                        e.target.src="/portada.png"
-                                    }}
-                                />
+                            
+                            {/* COLUMNA FOTO (Solo Aves y Productos) */}
+                            {seccion !== 'sorteos' && (
+                              <td className="px-8 py-5">
+                                <div className="w-16 h-16 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-white group-hover:shadow-md transition-all">
+                                  <img 
+                                      src={
+                                          (item.foto || item.fotoUrl)
+                                          ? ( (item.foto || item.fotoUrl).startsWith('http') 
+                                              ? (item.foto || item.fotoUrl) 
+                                              : `https://cunaalada-kitw.onrender.com${item.foto || item.fotoUrl}` )
+                                          : '/portada.png'
+                                      }
+                                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" 
+                                      alt="img"
+                                      onError={(e) => {
+                                          e.target.onerror = null; 
+                                          e.target.src="/portada.png"
+                                      }}
+                                  />
+                                </div>
+                              </td>
+                            )}
 
-                              </div>
-                            </td>
+                            {/* COLUMNA DETALLES */}
                             <td className="px-6 py-5 align-middle">
-                              <div className="font-bold text-slate-800 text-lg mb-1 flex items-center gap-2">
-                                {seccion === 'aves' ? item.especie : item.nombre}
-                                {item.enPromocion && (
-                                    <Tag size={14} className="text-red-500 fill-red-100"/>
-                                )}
-                                {seccion === 'aves' && item.estado !== 'disponible' && item.estado && (
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-md border uppercase font-bold ${item.estado === 'vendido' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-yellow-50 text-yellow-600 border-yellow-200'}`}>
-                                        {item.estado}
-                                    </span>
-                                )}
-                              </div>
+                              {seccion === 'sorteos' ? (
+                                <div>
+                                   <div className="font-bold text-slate-800 text-lg mb-1">{item.titulo}</div>
+                                   {item.aveId && (
+                                       <span className="flex items-center gap-1.5 font-mono text-xs bg-slate-100 w-fit px-2 py-0.5 rounded-md text-slate-600 border border-slate-200">
+                                          <Bird size={12} className="text-slate-400"/> {item.aveId.especie} {item.aveId.mutacion}
+                                       </span>
+                                   )}
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="font-bold text-slate-800 text-lg mb-1 flex items-center gap-2">
+                                    {seccion === 'aves' ? item.especie : item.nombre}
+                                    {item.enPromocion && <Tag size={14} className="text-red-500 fill-red-100"/>}
+                                    {seccion === 'aves' && item.estado !== 'disponible' && item.estado && (
+                                        <span className={`text-[10px] px-2 py-0.5 rounded-md border uppercase font-bold ${item.estado === 'vendido' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-yellow-50 text-yellow-600 border-yellow-200'}`}>
+                                            {item.estado}
+                                        </span>
+                                    )}
+                                  </div>
 
-                              {seccion === 'aves' && item.nombreAsignado && (
-                                <div className="mb-2">
-                                    <span className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-lg text-xs font-bold border border-indigo-100 shadow-sm">
-                                        <span className="uppercase text-[9px] tracking-wider text-indigo-400 font-medium">Nombre:</span>
-                                        {item.nombreAsignado}
-                                        {item.propietario && (
-                                            <span className="font-normal text-indigo-400 ml-1 text-[10px] flex items-center">
-                                                <User size={10} className="mr-0.5"/> {item.propietario}
-                                            </span>
+                                  {seccion === 'aves' && item.nombreAsignado && (
+                                    <div className="mb-2">
+                                        <span className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-lg text-xs font-bold border border-indigo-100 shadow-sm">
+                                            <span className="uppercase text-[9px] tracking-wider text-indigo-400 font-medium">Nombre:</span>
+                                            {item.nombreAsignado}
+                                            {item.propietario && (
+                                                <span className="font-normal text-indigo-400 ml-1 text-[10px] flex items-center">
+                                                    <User size={10} className="mr-0.5"/> {item.propietario}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="text-sm text-slate-500 flex flex-col gap-1.5">
+                                    {seccion === 'aves' ? (
+                                      <>
+                                        <span className="flex items-center gap-2">
+                                          <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></span> 
+                                          {item.mutacion}
+                                        </span>
+                                        {item.anillo && (
+                                        <span className="flex items-center gap-1.5 font-mono text-xs bg-slate-100 w-fit px-2 py-0.5 rounded-md text-slate-600 border border-slate-200">
+                                            <Hash size={12} className="text-slate-400"/> {item.anillo}
+                                        </span>
                                         )}
+                                      </>
+                                    ) : (
+                                      <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md text-xs font-bold w-fit border border-blue-100">{item.categoria}</span>
+                                    )}
+                                  </div>
+                                </>
+                              )}
+                            </td>
+
+                            {/* COLUMNA PRECIO / ESTADO DE SORTEO */}
+                            <td className="px-6 py-5 align-middle">
+                              {seccion === 'sorteos' ? (
+                                <div className="space-y-1">
+                                    <div className="text-sm text-slate-500">
+                                        Vendidos: <span className="font-bold text-violet-600">{item.boletosVendidos?.length || 0}</span> / {item.totalBoletos}
+                                    </div>
+                                    <div className="text-sm text-slate-500">
+                                        Boleto: <span className="font-bold">${item.precioBoleto}</span>
+                                    </div>
+                                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase inline-block mt-1
+                                      ${item.estado === 'ACTIVO' ? 'bg-emerald-100 text-emerald-700' : 
+                                        item.estado === 'LLENO' ? 'bg-yellow-100 text-yellow-700 animate-pulse' : 
+                                        'bg-slate-100 text-slate-500'}`}>
+                                      {item.estado}
                                     </span>
                                 </div>
-                              )}
-                              
-                              <div className="text-sm text-slate-500 flex flex-col gap-1.5">
-                                {seccion === 'aves' ? (
-                                  <>
-                                    <span className="flex items-center gap-2">
-                                      <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></span> 
-                                      {item.mutacion}
+                              ) : (
+                                <>
+                                  <div className={`font-bold text-xl text-${theme.main}-600`}>${item.precio}</div>
+                                  {item.enPromocion && (
+                                    <span className="bg-rose-50 text-rose-500 text-[10px] px-2.5 py-1 rounded-full font-bold border border-rose-100 inline-block mt-2 tracking-wide uppercase shadow-sm">
+                                      ¡Oferta!
                                     </span>
-                                    {item.anillo && (
-                                     <span className="flex items-center gap-1.5 font-mono text-xs bg-slate-100 w-fit px-2 py-0.5 rounded-md text-slate-600 border border-slate-200">
-                                        <Hash size={12} className="text-slate-400"/> {item.anillo}
-                                     </span>
-                                    )}
-                                  </>
-                                ) : (
-                                  <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md text-xs font-bold w-fit border border-blue-100">{item.categoria}</span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-6 py-5 align-middle">
-                              <div className={`font-bold text-xl ${seccion === 'aves' ? 'text-emerald-600' : 'text-blue-600'}`}>${item.precio}</div>
-                              {item.enPromocion && (
-                                <span className="bg-rose-50 text-rose-500 text-[10px] px-2.5 py-1 rounded-full font-bold border border-rose-100 inline-block mt-2 tracking-wide uppercase shadow-sm">
-                                  ¡Oferta!
-                                </span>
+                                  )}
+                                </>
                               )}
                             </td>
-                            <td className="px-6 py-5 align-middle text-right">
-                              <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-300">
-                                
-                                {seccion === 'aves' && (
-                                     <button 
-                                      onClick={() => generarLinkRegistro(item._id)} 
-                                      className="p-2.5 bg-yellow-100 text-yellow-700 hover:bg-yellow-500 hover:text-white rounded-xl transition-all font-bold"
-                                      title="Copiar Link de Venta"
-                                     >
-                                       <Copy size={18} />
-                                     </button>
-                                )}
 
-                                <button onClick={() => prepararEdicion(item)} className="p-2.5 text-blue-500 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all hover:shadow-sm border border-transparent hover:border-blue-100" title="Editar">
-                                  <Edit2 size={18}/>
-                                </button>
-                                <button onClick={() => abrirModalEliminar(item._id)} className="p-2.5 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all hover:shadow-sm border border-transparent hover:border-rose-100" title="Eliminar">
-                                  <Trash2 size={18}/>
-                                </button>
-                              </div>
+                            {/* COLUMNA ACCIONES */}
+                            <td className="px-6 py-5 align-middle text-right">
+                              
+                              {/* Acciones Sorteos */}
+                              {seccion === 'sorteos' ? (
+                                  <>
+                                      {item.estado === 'LLENO' && (
+                                          <button onClick={() => revelarGanador(item._id)} className="bg-violet-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-violet-200 hover:bg-violet-700 transition flex items-center gap-2 ml-auto">
+                                              <Trophy size={16}/> Revelar Ganador
+                                          </button>
+                                      )}
+                                      {item.estado === 'FINALIZADO' && (
+                                          <div className="text-sm font-bold text-slate-800 bg-violet-50 px-3 py-2 rounded-lg border border-violet-100 inline-block">
+                                              🏆 <span className="text-violet-600">{item.ganador?.nombreCliente || 'Desconocido'}</span>
+                                              <br/><span className="text-[10px] text-slate-500 font-normal">Ticket #{item.ganador?.numeroBoleto}</span>
+                                          </div>
+                                      )}
+                                  </>
+                              ) : (
+                                  /* Acciones Aves y Productos */
+                                  <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-300">
+                                    {seccion === 'aves' && (
+                                        <button 
+                                          onClick={() => generarLinkRegistro(item._id)} 
+                                          className="p-2.5 bg-yellow-100 text-yellow-700 hover:bg-yellow-500 hover:text-white rounded-xl transition-all font-bold"
+                                          title="Copiar Link de Venta"
+                                        >
+                                          <Copy size={18} />
+                                        </button>
+                                    )}
+
+                                    <button onClick={() => prepararEdicion(item)} className="p-2.5 text-blue-500 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all hover:shadow-sm border border-transparent hover:border-blue-100" title="Editar">
+                                      <Edit2 size={18}/>
+                                    </button>
+                                    <button onClick={() => abrirModalEliminar(item._id)} className="p-2.5 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all hover:shadow-sm border border-transparent hover:border-rose-100" title="Eliminar">
+                                      <Trash2 size={18}/>
+                                    </button>
+                                  </div>
+                              )}
                             </td>
+
                           </tr>
                         ))}
                       </tbody>
@@ -717,12 +847,10 @@ const AdminPanel = ({ cerrarSesion }) => {
         }
         .input-modern:focus {
           background-color: #ffffff;
-          border-color: ${seccion === 'aves' ? '#10b981' : '#3b82f6'};
-          box-shadow: 0 4px 12px ${seccion === 'aves' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)'};
+          border-color: ${seccion === 'aves' ? '#10b981' : seccion === 'productos' ? '#3b82f6' : '#8b5cf6'};
+          box-shadow: 0 4px 12px ${seccion === 'aves' ? 'rgba(16, 185, 129, 0.1)' : seccion === 'productos' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(139, 92, 246, 0.1)'};
         }
-        .input-modern::placeholder {
-          color: #94a3b8;
-        }
+        .input-modern::placeholder { color: #94a3b8; }
         
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
