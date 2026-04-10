@@ -4,12 +4,15 @@ const cors = require('cors');
 const { v4: uuidv4 } = require('uuid'); 
 const multer = require('multer'); 
 const path = require('path');     
-const fs = require('fs');         
 require('dotenv').config();
 
 // --- IMPORTACIONES PARA GOOGLE LOGIN Y SEGURIDAD ---
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
+
+// --- NUEVAS IMPORTACIONES PARA CLOUDINARY (Fotos inmortales) ---
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 // Inicializar Stripe con la llave secreta del archivo .env
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -25,21 +28,21 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Carpeta estática para las imágenes
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// --- CONFIGURACIÓN DE CLOUDINARY ---
+// Lee las llaves mágicas que pusiste en el Environment de Render
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-// --- CONFIGURACIÓN DE MULTER (EL MOTOR DE FOTOS) ---
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const dir = './uploads';
-        if (!fs.existsSync(dir)){
-            fs.mkdirSync(dir);
-        }
-        cb(null, 'uploads/');
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname)); 
-    }
+// --- NUEVO MOTOR DE FOTOS (Sube directo a la nube) ---
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'cuna_alada_fotos', // Se creará esta carpeta en tu cuenta de Cloudinary
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp']
+  }
 });
 const upload = multer({ storage: storage });
 
@@ -98,8 +101,9 @@ app.get('/api/aves', async (req, res) => {
 app.post('/api/aves', upload.single('foto'), async (req, res) => {
     try {
         const datos = req.body;
+        // Ahora req.file.path contiene la URL pública y segura de Cloudinary
         if (req.file) {
-            datos.fotoUrl = `/uploads/${req.file.filename}`;
+            datos.fotoUrl = req.file.path;
         }
         const nuevaAve = new Ave(datos);
         await nuevaAve.save();
@@ -110,8 +114,9 @@ app.post('/api/aves', upload.single('foto'), async (req, res) => {
 app.put('/api/aves/:id', upload.single('foto'), async (req, res) => {
     try {
         const datos = req.body;
+        // Si el usuario subió una foto nueva al editar, actualizamos la URL de Cloudinary
         if (req.file) {
-            datos.fotoUrl = `/uploads/${req.file.filename}`;
+            datos.fotoUrl = req.file.path;
         }
         const aveActualizada = await Ave.findByIdAndUpdate(req.params.id, datos, { new: true });
         res.json({ success: true, message: 'Ave actualizada', ave: aveActualizada });
@@ -178,12 +183,24 @@ app.get('/api/productos', async (req, res) => {
 app.post('/api/productos', upload.single('foto'), async (req, res) => {
     try {
         const datos = req.body;
+        // La tienda también usa Cloudinary ahora
         if (req.file) {
-            datos.fotoUrl = `/uploads/${req.file.filename}`;
+            datos.fotoUrl = req.file.path;
         }
         const nuevoProducto = new Producto(datos);
         await nuevoProducto.save();
         res.json(nuevoProducto);
+    } catch (error) { res.status(500).json(error); }
+});
+
+app.put('/api/productos/:id', upload.single('foto'), async (req, res) => {
+    try {
+        const datos = req.body;
+        if (req.file) {
+            datos.fotoUrl = req.file.path;
+        }
+        const productoActualizado = await Producto.findByIdAndUpdate(req.params.id, datos, { new: true });
+        res.json({ success: true, producto: productoActualizado });
     } catch (error) { res.status(500).json(error); }
 });
 
@@ -280,4 +297,4 @@ app.post('/api/auth/google', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => console.log(`🚀 Servidor de Cuna Alada System v4.0 corriendo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Servidor de Cuna Alada System v5.0 (Cloudinary) corriendo en puerto ${PORT}`));
