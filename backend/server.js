@@ -203,52 +203,62 @@ app.delete('/api/sorteos/:id', async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-// 3. Cliente: Crear intención de pago (Stripe) con total correcto
+// 3. Cliente: Crear intención de pago (Stripe) soportando MÚLTIPLES boletos
 app.post('/api/sorteos/crear-pago', async (req, res) => {
     try {
-        const { sorteoId, cantidad = 1, numeroElegido } = req.body;
+        // Ahora esperamos "numerosElegidos" como un arreglo desde el frontend
+        const { sorteoId, cantidad = 1, numerosElegidos } = req.body;
         const sorteo = await Sorteo.findById(sorteoId);
         
         if (!sorteo || sorteo.estado !== 'ACTIVO') return res.status(400).json({ error: 'Sorteo no disponible' });
 
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: (sorteo.precioBoleto * cantidad) * 100, // Multiplicado por 100 para los centavos de Stripe
+            amount: (sorteo.precioBoleto * cantidad) * 100, // Precio total
             currency: 'mxn', 
             metadata: { 
                 sorteoId: sorteo._id.toString(),
-                numeroBoleto: numeroElegido ? numeroElegido.toString() : ''
+                // Guardamos los números como texto (ej: "5,12,30") en los metadatos de Stripe
+                numerosBoletos: numerosElegidos && Array.isArray(numerosElegidos) ? numerosElegidos.join(',') : ''
             }
         });
         res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error) { res.status(500).json({ error: 'Error en pago' }); }
 });
 
-// 4. Cliente: Confirmar Compra y Guardar su Número Elegido
+// 4. Cliente: Confirmar Compra y Guardar MÚLTIPLES Números Elegidos
 app.post('/api/sorteos/:id/confirmar-compra', async (req, res) => {
     try {
-        const { nombre, email, telefono, numeroBoleto, idPago } = req.body;
+        // Ahora recibimos "numerosBoletos" (Array)
+        const { nombre, email, telefono, numerosBoletos, idPago } = req.body;
         const sorteo = await Sorteo.findById(req.params.id);
 
         if (!sorteo || sorteo.estado !== 'ACTIVO') {
             return res.status(400).json({ success: false, message: 'El sorteo no está disponible.' });
         }
 
-        // Verificamos que alguien más no haya ganado ese número mientras pagaban
-        const ocupado = sorteo.boletosVendidos.find(b => b.numeroBoleto === parseInt(numeroBoleto));
-        if (ocupado) {
-            return res.status(400).json({ success: false, message: 'Ese número se acaba de vender, intenta con otro.' });
+        // VALIDACIÓN DE SEGURIDAD: Verificamos si ALGUN de los boletos solicitados ya se vendió
+        const boletosOcupados = sorteo.boletosVendidos.filter(b => numerosBoletos.includes(b.numeroBoleto));
+        
+        if (boletosOcupados.length > 0) {
+            const numerosPerdidos = boletosOcupados.map(b => b.numeroBoleto).join(', ');
+            return res.status(400).json({ 
+                success: false, 
+                message: `Alguien más acaba de comprar los números: ${numerosPerdidos}. Por favor, selecciona otros.` 
+            });
         }
 
-        // Guardamos el boleto exactamente como lo manda el frontend
-        sorteo.boletosVendidos.push({
-            nombreCliente: nombre,
-            telefonoCliente: telefono,
-            usuarioEmail: email,
-            numeroBoleto: parseInt(numeroBoleto),
-            idPagoStripe: idPago
+        // Si están libres, los guardamos todos mediante un loop
+        numerosBoletos.forEach(numero => {
+            sorteo.boletosVendidos.push({
+                nombreCliente: nombre,
+                telefonoCliente: telefono,
+                usuarioEmail: email,
+                numeroBoleto: parseInt(numero),
+                idPagoStripe: idPago
+            });
         });
 
-        // Si se vendió el último boleto, activar la fase "LLENO" 
+        // Si se vendieron todos los lugares, activar fase "LLENO"
         if (sorteo.boletosVendidos.length >= sorteo.totalBoletos) {
             sorteo.estado = 'LLENO';
             let fechaSorteo = new Date();
@@ -257,7 +267,7 @@ app.post('/api/sorteos/:id/confirmar-compra', async (req, res) => {
         }
 
         await sorteo.save();
-        res.json({ success: true, message: 'Boleto adquirido con éxito', boleto: numeroBoleto, sorteo });
+        res.json({ success: true, message: 'Boletos adquiridos con éxito', boletos: numerosBoletos, sorteo });
     } catch (error) { res.status(500).json(error); }
 });
 

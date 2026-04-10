@@ -1,20 +1,152 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Ticket, Trophy, CreditCard, Sparkles, ShieldCheck, Clock, ArrowRight, X, Loader2, CheckCircle2 } from 'lucide-react';
+import { Ticket, Trophy, CreditCard, Sparkles, ShieldCheck, Clock, ArrowRight, X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 // --- INICIALIZACIÓN DE STRIPE CON TU LLAVE PÚBLICA ---
 const stripePromise = loadStripe('pk_test_51SFnF0ROWvZ0m785J38J20subms9zeVw92xxsdct2OVzHbIXF8Kueajcp4jxJblwBhozD1xDljC2UG1qDNOGOxTX00UiDpoLCI');
 
+// ============================================================================
+// COMPONENTE HIJO: FORMULARIO DE PAGO STRIPE (Debe estar dentro de <Elements>)
+// ============================================================================
+const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSuccess, onCancel }) => {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [procesandoPago, setProcesandoPago] = useState(false);
+    const [errorStripe, setErrorStripe] = useState(null);
+
+    const procesarPago = async (e) => {
+        e.preventDefault();
+
+        if (numerosSeleccionados.length === 0) {
+            return setErrorStripe("Por favor, selecciona al menos un número en la cuadrícula.");
+        }
+        if (!stripe || !elements) {
+            return; // Stripe no ha cargado aún
+        }
+
+        setProcesandoPago(true);
+        setErrorStripe(null);
+
+        try {
+            // 1. Pedirle al backend que cree la intención de pago (PaymentIntent) por el total
+            const resPago = await axios.post('https://cunaalada-kitw.onrender.com/api/sorteos/crear-pago', {
+                sorteoId: sorteo._id,
+                cantidad: numerosSeleccionados.length, // Multiplicador de precio
+                numerosElegidos: numerosSeleccionados // Array de números
+            });
+
+            const { clientSecret } = resPago.data;
+
+            // 2. Confirmar el pago directamente con Stripe usando la tarjeta ingresada
+            const result = await stripe.confirmCardPayment(clientSecret, {
+                payment_method: {
+                    card: elements.getElement(CardElement),
+                    billing_details: {
+                        name: datos.nombre,
+                        email: datos.email,
+                        phone: datos.telefono
+                    }
+                }
+            });
+
+            if (result.error) {
+                // Error en la tarjeta (fondos insuficientes, declinada, etc)
+                setErrorStripe(result.error.message);
+                setProcesandoPago(false);
+            } else {
+                if (result.paymentIntent.status === 'succeeded') {
+                    // 3. Pago exitoso! Avisamos al backend para que guarde los boletos
+                    const resConfirmacion = await axios.post(`https://cunaalada-kitw.onrender.com/api/sorteos/${sorteo._id}/confirmar-compra`, {
+                        nombre: datos.nombre,
+                        email: datos.email,
+                        telefono: datos.telefono,
+                        numerosBoletos: numerosSeleccionados, // Enviamos el ARRAY de números
+                        idPago: result.paymentIntent.id
+                    });
+
+                    onSuccess(numerosSeleccionados); // Ejecutar éxito en el componente padre
+                }
+            }
+        } catch (error) {
+            console.error("Error en pago:", error);
+            setErrorStripe(error.response?.data?.message || "Ocurrió un problema al conectar con el servidor.");
+            setProcesandoPago(false);
+        }
+    };
+
+    // Estilos personalizados para el input de la tarjeta de Stripe
+    const cardStyle = {
+        style: {
+            base: { color: '#334155', fontFamily: '"Inter", sans-serif', fontSize: '16px', '::placeholder': { color: '#94a3b8' } },
+            invalid: { color: '#ef4444', iconColor: '#ef4444' }
+        }
+    };
+
+    return (
+        <form onSubmit={procesarPago} className="space-y-4">
+            <div>
+                <input type="text" required value={datos.nombre} onChange={e => setDatos({...datos, nombre: e.target.value})} disabled={procesandoPago} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700" placeholder="Nombre completo" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <input type="email" required value={datos.email} onChange={e => setDatos({...datos, email: e.target.value})} disabled={procesandoPago} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700" placeholder="Correo electrónico" />
+                <input type="tel" required value={datos.telefono} onChange={e => setDatos({...datos, telefono: e.target.value})} disabled={procesandoPago} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700" placeholder="Teléfono" />
+            </div>
+
+            {/* CAJA DE TARJETA DE STRIPE */}
+            <div className="mt-4 p-4 rounded-2xl bg-white border-2 border-slate-200 hover:border-emerald-400 transition-colors">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Datos de la Tarjeta</label>
+                <div className="p-2">
+                    <CardElement options={cardStyle} />
+                </div>
+            </div>
+
+            {errorStripe && (
+                <div className="p-4 bg-rose-50 text-rose-600 rounded-xl flex items-center gap-2 text-sm font-bold border border-rose-200">
+                    <AlertCircle size={18} /> {errorStripe}
+                </div>
+            )}
+
+            <div className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl border border-emerald-100 mt-6 shadow-sm">
+                <div className="flex justify-between items-center text-emerald-800 font-bold mb-2 pb-2 border-b border-emerald-200/50">
+                    <span>Boletos Elegidos:</span>
+                    <span className="text-lg bg-emerald-200 px-3 py-1 rounded-lg">
+                        {numerosSeleccionados.length > 0 ? numerosSeleccionados.length : '0'}
+                    </span>
+                </div>
+                <div className="flex justify-between items-end mt-4">
+                    <span className="text-emerald-700 text-sm uppercase font-bold tracking-wider">Total a Pagar</span>
+                    <span className="text-4xl font-black text-emerald-600">
+                        ${sorteo.precioBoleto * numerosSeleccionados.length}
+                    </span>
+                </div>
+            </div>
+
+            <button 
+                type="submit" 
+                disabled={procesandoPago || numerosSeleccionados.length === 0 || !stripe} 
+                className={`w-full mt-6 py-5 rounded-2xl font-black text-white flex justify-center items-center gap-3 transition-all shadow-xl
+                ${(numerosSeleccionados.length === 0 || procesandoPago) ? 'bg-slate-300 shadow-none cursor-not-allowed' : 'bg-gray-900 hover:bg-emerald-600 hover:-translate-y-1 hover:shadow-emerald-500/30'}`}
+            >
+                {procesandoPago ? <Loader2 className="animate-spin" /> : <CreditCard size={24} />}
+                {procesandoPago ? 'Procesando Pago Seguro...' : 'Pagar de Forma Segura'}
+            </button>
+        </form>
+    );
+};
+
+// ============================================================================
+// COMPONENTE PRINCIPAL: VISTA DE SORTEOS
+// ============================================================================
 const Sorteos = () => {
     const [sorteos, setSorteos] = useState([]);
     const [loading, setLoading] = useState(true);
     
     // Estados para el flujo de compra interactivo
     const [modalCompra, setModalCompra] = useState({ show: false, sorteo: null });
-    const [numeroSeleccionado, setNumeroSeleccionado] = useState(null);
-    const [datos, setDatos] = useState({ nombre: '', email: '', telefono: '' });
-    const [procesandoPago, setProcesandoPago] = useState(false);
+    const [numerosSeleccionados, setNumerosSeleccionados] = useState([]); // AHORA ES UN ARRAY
+    const [datosCliente, setDatosCliente] = useState({ nombre: '', email: '', telefono: '' });
     const [mensajeExito, setMensajeExito] = useState(null);
 
     const cargarSorteos = async () => {
@@ -23,6 +155,7 @@ const Sorteos = () => {
             if (res.data && res.data.length > 0) {
                 setSorteos(res.data);
             } else {
+                // Sorteo de prueba visual si la base de datos está vacía
                 setSorteos([{
                     _id: 'demo-1',
                     premio: 'Agapornis Fisher - Mutación Arlequín Azul',
@@ -43,59 +176,34 @@ const Sorteos = () => {
 
     useEffect(() => {
         cargarSorteos();
-        // Polling para actualizar boletos en tiempo real
-        const interval = setInterval(cargarSorteos, 10000);
+        const interval = setInterval(cargarSorteos, 10000); // Refrescar cada 10s
         return () => clearInterval(interval);
     }, []);
 
     const abrirModal = (sorteo) => {
         setModalCompra({ show: true, sorteo });
-        setNumeroSeleccionado(null);
-        setDatos({ nombre: '', email: '', telefono: '' });
+        setNumerosSeleccionados([]); // Limpiar selección previa
+        setDatosCliente({ nombre: '', email: '', telefono: '' }); // Limpiar datos previos
     };
 
-    // --- PROCESAMIENTO DE PAGO Y ASIGNACIÓN DE BOLETO ---
-    const procesarPago = async (e) => {
-        e.preventDefault();
-        if (!numeroSeleccionado) {
-            return alert("Por favor, selecciona un número de boleto en la cuadrícula primero.");
-        }
+    // Lógica para SELECCIONAR MÚLTIPLES NÚMEROS
+    const toggleNumero = (n) => {
+        setNumerosSeleccionados(prev => {
+            if (prev.includes(n)) {
+                // Si ya está seleccionado, lo quitamos del array
+                return prev.filter(num => num !== n);
+            } else {
+                // Si no está seleccionado, lo añadimos
+                return [...prev, n];
+            }
+        });
+    };
 
-        setProcesandoPago(true);
-
-        try {
-            const stripe = await stripePromise;
-            
-            // 1. Crear intención de pago con tu backend (Stripe)
-            const resPago = await axios.post('https://cunaalada-kitw.onrender.com/api/sorteos/crear-pago', {
-                sorteoId: modalCompra.sorteo._id,
-                cantidad: 1,
-                numeroElegido: numeroSeleccionado
-            });
-
-            // NOTA: En un entorno de producción estricto, aquí abrirías el modal de Stripe (Elements) 
-            // usando resPago.data.clientSecret. Por ahora, completamos el flujo enviando los datos a tu BD.
-
-            // 2. Confirmar la compra y apartar el boleto específico en la base de datos
-            const resConfirmacion = await axios.post(`https://cunaalada-kitw.onrender.com/api/sorteos/${modalCompra.sorteo._id}/confirmar-compra`, {
-                nombre: datos.nombre,
-                email: datos.email,
-                telefono: datos.telefono,
-                numeroBoleto: numeroSeleccionado,
-                idPago: "stripe_procesado_" + Date.now() // Simulamos el ID devuelto por Stripe
-            });
-
-            // 3. Mostrar pantalla de éxito al cliente
-            setMensajeExito(resConfirmacion.data.boleto);
-            setModalCompra({ show: false, sorteo: null });
-            cargarSorteos(); // Recargar para ver el cambio de estado
-
-        } catch (error) {
-            console.error("Error:", error);
-            alert("Error: " + (error.response?.data?.message || "Ocurrió un problema al procesar tu compra."));
-        } finally {
-            setProcesandoPago(false);
-        }
+    // Se ejecuta desde el hijo (FormularioPago) cuando todo sale bien
+    const handlePagoExitoso = (boletosComprados) => {
+        setMensajeExito(boletosComprados);
+        setModalCompra({ show: false, sorteo: null });
+        cargarSorteos(); 
     };
 
     if (loading) {
@@ -107,7 +215,7 @@ const Sorteos = () => {
     }
 
     return (
-        <div className="min-h-screen relative pb-24 bg-[#F8F9FA] overflow-hidden">
+        <div className="min-h-screen relative pb-24 bg-[#F8F9FA] overflow-hidden notranslate" translate="no">
             
             {/* ESTILOS Y ANIMACIONES CSS */}
             <style>{`
@@ -127,18 +235,26 @@ const Sorteos = () => {
             <div className="absolute top-[10%] left-[-10%] w-96 h-96 bg-emerald-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse" />
             <div className="absolute bottom-[20%] right-[-10%] w-96 h-96 bg-teal-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse" />
 
-            {/* --- PANTALLA DE ÉXITO Y ENTREGA DE BOLETO --- */}
+            {/* --- PANTALLA DE ÉXITO Y ENTREGA DE MÚLTIPLES BOLETOS --- */}
             {mensajeExito && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-emerald-900/90 backdrop-blur-md p-4">
                     <div className="bg-white p-10 md:p-16 rounded-[40px] text-center shadow-2xl max-w-lg w-full animacion-entrada">
                         <CheckCircle2 size={80} className="text-emerald-500 mx-auto mb-6 animate-bounce" />
-                        <h2 className="text-4xl font-black text-slate-800 mb-2">¡Boleto Adquirido!</h2>
+                        <h2 className="text-4xl font-black text-slate-800 mb-2">¡Compra Exitosa!</h2>
                         <p className="text-slate-500 text-lg mb-6">Tu pago se procesó correctamente. Mucha suerte.</p>
                         
                         <div className="bg-emerald-50 border-2 border-emerald-200 rounded-3xl p-8 mb-8 relative overflow-hidden">
                             <div className="absolute -right-4 -top-4 opacity-10 text-emerald-500"><Ticket size={100}/></div>
-                            <p className="text-emerald-800 font-bold uppercase tracking-widest text-sm mb-2">Tu número oficial es:</p>
-                            <div className="text-7xl font-black text-emerald-600">#{mensajeExito}</div>
+                            <p className="text-emerald-800 font-bold uppercase tracking-widest text-sm mb-4">
+                                {mensajeExito.length > 1 ? 'Tus números oficiales son:' : 'Tu número oficial es:'}
+                            </p>
+                            <div className="text-4xl md:text-5xl font-black text-emerald-600 flex flex-wrap justify-center gap-3">
+                                {mensajeExito.map(n => (
+                                    <span key={n} className="bg-white px-4 py-2 rounded-xl border border-emerald-200 shadow-sm">
+                                        #{n}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
 
                         <button 
@@ -151,46 +267,53 @@ const Sorteos = () => {
                 </div>
             )}
 
-            {/* --- MODAL DE SELECCIÓN DE NÚMERO Y PAGO --- */}
+            {/* --- MODAL DE SELECCIÓN DE NÚMEROS Y PAGO --- */}
             {modalCompra.show && modalCompra.sorteo && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
-                    <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative animacion-entrada">
+                    <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto relative animacion-entrada">
                         
                         {/* Cabecera del modal */}
                         <div className="bg-slate-50 p-6 md:p-8 border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
                             <div>
-                                <h3 className="text-2xl font-black text-slate-800">Adquirir Boleto</h3>
+                                <h3 className="text-2xl font-black text-slate-800">Adquirir Boletos</h3>
                                 <p className="text-slate-500 text-sm mt-1">{modalCompra.sorteo.premio}</p>
                             </div>
-                            <button onClick={() => !procesandoPago && setModalCompra({ show: false, sorteo: null })} className="p-2 bg-white rounded-full text-slate-400 hover:text-slate-800 shadow-sm border border-slate-200">
+                            <button onClick={() => setModalCompra({ show: false, sorteo: null })} className="p-2 bg-white rounded-full text-slate-400 hover:text-slate-800 shadow-sm border border-slate-200">
                                 <X size={24} />
                             </button>
                         </div>
 
                         <div className="p-6 md:p-10 grid lg:grid-cols-2 gap-12">
-                            {/* Lado Izquierdo: Cuadrícula de Números */}
+                            {/* Lado Izquierdo: Cuadrícula de Números MULTIPLE */}
                             <div>
-                                <h4 className="text-xl font-black text-slate-800 mb-2 flex items-center gap-2">
-                                    <span className="bg-emerald-100 text-emerald-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span> 
-                                    Elige tu Número
-                                </h4>
-                                <p className="text-slate-500 text-sm mb-6">Selecciona uno de los lugares disponibles en la cuadrícula.</p>
+                                <div className="flex justify-between items-end mb-4">
+                                    <h4 className="text-xl font-black text-slate-800 flex items-center gap-2">
+                                        <span className="bg-emerald-100 text-emerald-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span> 
+                                        Elige tus Números
+                                    </h4>
+                                    <span className="text-sm font-bold text-emerald-600">
+                                        Seleccionados: {numerosSeleccionados.length}
+                                    </span>
+                                </div>
+                                <p className="text-slate-500 text-sm mb-6">Haz clic en los lugares de la cuadrícula que deseas comprar. Puedes elegir varios.</p>
                                 
-                                <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 bg-slate-50 p-4 rounded-3xl border border-slate-100">
+                                <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 bg-slate-50 p-4 rounded-3xl border border-slate-100 max-h-[400px] overflow-y-auto">
                                     {[...Array(modalCompra.sorteo.totalBoletos)].map((_, i) => {
                                         const n = i + 1;
                                         const ocupado = modalCompra.sorteo.boletosVendidos.some(b => b.numeroBoleto === n);
+                                        const estaSeleccionado = numerosSeleccionados.includes(n);
+
                                         return (
                                             <button 
                                                 key={n}
                                                 type="button"
                                                 disabled={ocupado}
-                                                onClick={() => setNumeroSeleccionado(n)}
+                                                onClick={() => toggleNumero(n)}
                                                 className={`aspect-square rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-200
                                                 ${ocupado 
-                                                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300' 
-                                                    : numeroSeleccionado === n 
-                                                        ? 'bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-200' 
+                                                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300 opacity-50' 
+                                                    : estaSeleccionado 
+                                                        ? 'bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-200 border-2 border-emerald-600' 
                                                         : 'bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200 hover:border-emerald-200'}`}
                                             >
                                                 {n}
@@ -198,46 +321,31 @@ const Sorteos = () => {
                                         );
                                     })}
                                 </div>
+                                <div className="mt-4 flex gap-4 text-xs font-bold text-slate-500 justify-center">
+                                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-white border border-slate-200"></span> Libre</span>
+                                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-emerald-500"></span> Tu Elección</span>
+                                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-slate-300"></span> Ocupado</span>
+                                </div>
                             </div>
 
-                            {/* Lado Derecho: Formulario y Pago */}
+                            {/* Lado Derecho: Formulario y Pago con STRIPE ELEMENTS */}
                             <div>
                                 <h4 className="text-xl font-black text-slate-800 mb-2 flex items-center gap-2">
                                     <span className="bg-emerald-100 text-emerald-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span> 
-                                    Tus Datos
+                                    Tus Datos y Pago
                                 </h4>
-                                <p className="text-slate-500 text-sm mb-6">Ingresa la información para registrar tu participación.</p>
+                                <p className="text-slate-500 text-sm mb-6">Completa tu información y paga de forma segura.</p>
                                 
-                                <form onSubmit={procesarPago} className="space-y-4">
-                                    <div>
-                                        <input type="text" required value={datos.nombre} onChange={e => setDatos({...datos, nombre: e.target.value})} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700" placeholder="Nombre completo" />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input type="email" required value={datos.email} onChange={e => setDatos({...datos, email: e.target.value})} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700" placeholder="Correo electrónico" />
-                                        <input type="tel" required value={datos.telefono} onChange={e => setDatos({...datos, telefono: e.target.value})} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700" placeholder="Teléfono" />
-                                    </div>
-
-                                    <div className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl border border-emerald-100 mt-6 shadow-sm">
-                                        <div className="flex justify-between items-center text-emerald-800 font-bold mb-2 pb-2 border-b border-emerald-200/50">
-                                            <span>Boleto Seleccionado:</span>
-                                            <span className="text-lg bg-emerald-200 px-3 py-1 rounded-lg">#{numeroSeleccionado || '---'}</span>
-                                        </div>
-                                        <div className="flex justify-between items-end mt-4">
-                                            <span className="text-emerald-700 text-sm uppercase font-bold tracking-wider">Total a Pagar</span>
-                                            <span className="text-4xl font-black text-emerald-600">${modalCompra.sorteo.precioBoleto}</span>
-                                        </div>
-                                    </div>
-
-                                    <button 
-                                        type="submit" 
-                                        disabled={procesandoPago || !numeroSeleccionado} 
-                                        className={`w-full mt-6 py-5 rounded-2xl font-black text-white flex justify-center items-center gap-3 transition-all shadow-xl
-                                        ${(!numeroSeleccionado || procesandoPago) ? 'bg-slate-300 shadow-none cursor-not-allowed' : 'bg-gray-900 hover:bg-emerald-600 hover:-translate-y-1 hover:shadow-emerald-500/30'}`}
-                                    >
-                                        {procesandoPago ? <Loader2 className="animate-spin" /> : <CreditCard size={24} />}
-                                        {procesandoPago ? 'Procesando Pago...' : 'Pagar con Stripe'}
-                                    </button>
-                                </form>
+                                {/* Envolvemos el formulario en el Provider de Stripe */}
+                                <Elements stripe={stripePromise}>
+                                    <FormularioPago 
+                                        sorteo={modalCompra.sorteo}
+                                        numerosSeleccionados={numerosSeleccionados}
+                                        datos={datosCliente}
+                                        setDatos={setDatosCliente}
+                                        onSuccess={handlePagoExitoso}
+                                    />
+                                </Elements>
                             </div>
                         </div>
                     </div>
@@ -255,7 +363,7 @@ const Sorteos = () => {
                         Gana un <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400">Compañero Alado.</span>
                     </h1>
                     <p className="text-lg text-slate-500 max-w-2xl mx-auto font-medium">
-                        Adquiere tu boleto digital y participa por ejemplares únicos. El sorteo se realiza automáticamente al vender todos los lugares.
+                        Adquiere tus boletos digitales y participa por ejemplares únicos. El sorteo se realiza automáticamente al vender todos los lugares.
                     </p>
                 </div>
 
@@ -272,7 +380,6 @@ const Sorteos = () => {
                                 className="bg-white/80 backdrop-blur-xl rounded-[40px] p-6 md:p-10 flex flex-col lg:flex-row gap-10 shadow-2xl border border-white/60 relative overflow-hidden group animacion-entrada hover:shadow-emerald-900/10 transition-all duration-500"
                                 style={{ animationDelay: `${0.2 + (index * 0.1)}s` }}
                             >
-                                
                                 {/* Etiqueta de Estado Flotante */}
                                 {sorteo.estado === 'ACTIVO' && !estaLleno && (
                                     <div className="absolute top-0 right-10 bg-emerald-500 text-white px-6 py-2 rounded-b-2xl font-black text-xs tracking-widest shadow-[0_4px_15px_rgba(16,185,129,0.3)] flex items-center gap-2 z-20 transition-transform duration-300 group-hover:translate-y-1">
@@ -341,7 +448,7 @@ const Sorteos = () => {
 
                                             <button onClick={() => abrirModal(sorteo)} className="w-full py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-3 transition-all duration-300 shadow-xl overflow-hidden relative group/btn bg-gray-900 text-white hover:bg-emerald-600 hover:shadow-emerald-500/30 hover:-translate-y-1">
                                                 <Ticket size={24} className="relative z-10" /> 
-                                                <span className="relative z-10">Elegir Número y Comprar</span>
+                                                <span className="relative z-10">Elegir Números y Comprar</span>
                                                 <ArrowRight size={20} className="relative z-10 group-hover/btn:translate-x-2 transition-transform" />
                                             </button>
                                         </div>
