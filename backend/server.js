@@ -14,7 +14,7 @@ const jwt = require('jsonwebtoken');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// Inicializar Stripe con la llave secreta del archivo .env
+// --- STRIPE CONECTADO DE FORMA SEGURA (Lee desde el archivo .env) ---
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Configuración del Cliente de Google
@@ -160,10 +160,10 @@ app.delete('/api/productos/:id', async (req, res) => {
 });
 
 /* =======================================================
-   --- RUTAS PARA SORTEOS (VERSIÓN PREMIUM) --- 
+   --- RUTAS PARA SORTEOS (VERSIÓN PREMIUM FINAL) --- 
    ======================================================= */
 
-// 1. Obtener Sorteos (Adaptado para que el Frontend vea bien la foto)
+// 1. Obtener Sorteos 
 app.get('/api/sorteos', async (req, res) => {
     try {
         const sorteos = await Sorteo.find().populate('aveId');
@@ -171,7 +171,6 @@ app.get('/api/sorteos', async (req, res) => {
         const sorteosFormateados = sorteos.map(sorteo => {
             const sorteoObj = sorteo.toObject();
             if (sorteoObj.aveId) {
-                // Pasamos la foto del ave directamente para que sea fácil de leer en el frontend
                 sorteoObj.fotoUrl = sorteoObj.aveId.foto || sorteoObj.aveId.fotoUrl;
                 sorteoObj.premio = sorteoObj.titulo; 
             }
@@ -182,16 +181,21 @@ app.get('/api/sorteos', async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-// 2. Admin: Crear Sorteo
+// 2. Admin: Crear Sorteo Y BLOQUEAR AVE
 app.post('/api/sorteos', async (req, res) => {
     try {
         const nuevoSorteo = new Sorteo(req.body);
         await nuevoSorteo.save();
+
+        if (req.body.aveId) {
+            await Ave.findByIdAndUpdate(req.body.aveId, { estado: 'reservado' });
+        }
+
         res.json({ success: true, sorteo: nuevoSorteo });
     } catch (error) { res.status(500).json(error); }
 });
 
-// 2.5 Admin: Eliminar Sorteo (NUEVA RUTA AGREGADA)
+// 2.5 Admin: Eliminar Sorteo 
 app.delete('/api/sorteos/:id', async (req, res) => {
     try {
         await Sorteo.findByIdAndDelete(req.params.id);
@@ -199,58 +203,61 @@ app.delete('/api/sorteos/:id', async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-// 3. Cliente: Crear intención de pago (Stripe)
+// 3. Cliente: Crear intención de pago (Stripe) con total correcto
 app.post('/api/sorteos/crear-pago', async (req, res) => {
     try {
-        const { sorteoId } = req.body;
+        const { sorteoId, cantidad = 1, numeroElegido } = req.body;
         const sorteo = await Sorteo.findById(sorteoId);
         
         if (!sorteo || sorteo.estado !== 'ACTIVO') return res.status(400).json({ error: 'Sorteo no disponible' });
 
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: sorteo.precioBoleto * 100,
+            amount: (sorteo.precioBoleto * cantidad) * 100, // Multiplicado por 100 para los centavos de Stripe
             currency: 'mxn', 
-            metadata: { sorteoId: sorteo._id.toString() }
+            metadata: { 
+                sorteoId: sorteo._id.toString(),
+                numeroBoleto: numeroElegido ? numeroElegido.toString() : ''
+            }
         });
         res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error) { res.status(500).json({ error: 'Error en pago' }); }
 });
 
-// 4. Cliente: Registrar compra exitosa
-app.post('/api/sorteos/:id/comprar', async (req, res) => {
+// 4. Cliente: Confirmar Compra y Guardar su Número Elegido
+app.post('/api/sorteos/:id/confirmar-compra', async (req, res) => {
     try {
-        const { nombreCliente, telefonoCliente, usuarioEmail, idPagoStripe } = req.body;
+        const { nombre, email, telefono, numeroBoleto, idPago } = req.body;
         const sorteo = await Sorteo.findById(req.params.id);
 
         if (!sorteo || sorteo.estado !== 'ACTIVO') {
             return res.status(400).json({ success: false, message: 'El sorteo no está disponible.' });
         }
-        if (sorteo.boletosVendidos.length >= sorteo.totalBoletos) {
-            return res.status(400).json({ success: false, message: 'Boletos agotados.' });
+
+        // Verificamos que alguien más no haya ganado ese número mientras pagaban
+        const ocupado = sorteo.boletosVendidos.find(b => b.numeroBoleto === parseInt(numeroBoleto));
+        if (ocupado) {
+            return res.status(400).json({ success: false, message: 'Ese número se acaba de vender, intenta con otro.' });
         }
 
-        // Asignar el número de boleto secuencial
-        const numeroBoleto = sorteo.boletosVendidos.length + 1;
-
+        // Guardamos el boleto exactamente como lo manda el frontend
         sorteo.boletosVendidos.push({
-            nombreCliente,
-            telefonoCliente,
-            usuarioEmail,
-            numeroBoleto,
-            idPagoStripe
+            nombreCliente: nombre,
+            telefonoCliente: telefono,
+            usuarioEmail: email,
+            numeroBoleto: parseInt(numeroBoleto),
+            idPagoStripe: idPago
         });
 
-        // Si se vendió el último boleto, activar la fase "LLENO" y la cuenta regresiva
-        if (sorteo.boletosVendidos.length === sorteo.totalBoletos) {
+        // Si se vendió el último boleto, activar la fase "LLENO" 
+        if (sorteo.boletosVendidos.length >= sorteo.totalBoletos) {
             sorteo.estado = 'LLENO';
-            // Programar para 24 horas después
             let fechaSorteo = new Date();
             fechaSorteo.setHours(fechaSorteo.getHours() + 24);
             sorteo.fechaSorteoPlaneada = fechaSorteo;
         }
 
         await sorteo.save();
-        res.json({ success: true, message: 'Boleto adquirido con éxito', numeroBoleto, sorteo });
+        res.json({ success: true, message: 'Boleto adquirido con éxito', boleto: numeroBoleto, sorteo });
     } catch (error) { res.status(500).json(error); }
 });
 
@@ -272,7 +279,7 @@ app.post('/api/sorteos/:id/revelar', async (req, res) => {
             numeroBoleto: boletoGanador.numeroBoleto
         };
 
-        // Cambiar el estado del ave a "vendido"
+        // Cambiar el estado del ave a "vendido" oficial
         if(sorteo.aveId) {
             sorteo.aveId.estado = 'vendido';
             sorteo.aveId.propietario = boletoGanador.nombreCliente;
