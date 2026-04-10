@@ -11,8 +11,6 @@ require('dotenv').config();
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 
-// Inicializar Stripe con la llave secreta del archivo .env
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Configuración del Cliente de Google
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '543150877659-0ta3446oi5lm3vbbqa1trga13occu2ht.apps.googleusercontent.com';
@@ -24,6 +22,16 @@ const PORT = process.env.PORT || 5000;
 // --- MIDDLEWARE ---
 app.use(cors());
 app.use(express.json());
+
+// STRIPE CONFIG
+const express = require("express");
+const Stripe = require("stripe");
+const cors = require("cors");
+require("dotenv").config();
+
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+
+
 
 // Carpeta estática para las imágenes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
