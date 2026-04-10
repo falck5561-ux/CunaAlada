@@ -496,9 +496,7 @@ const AppContent = () => {
               autorizado ? (
                 <AdminPanel cerrarSesion={cerrarSesion} />
               ) : (
-                <div className="py-24 max-w-md mx-auto px-4">
-                  <Login setAutorizado={setAutorizado} />
-                </div>
+                <Login setAutorizado={setAutorizado} />
               )
             }
           />
