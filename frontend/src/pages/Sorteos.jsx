@@ -4,11 +4,11 @@ import { Ticket, Trophy, CreditCard, Sparkles, ShieldCheck, Clock, ArrowRight, X
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-// --- INICIALIZACIÓN DE STRIPE CON TU LLAVE PÚBLICA ---
+// --- INICIALIZACIÓN DE STRIPE ---
 const stripePromise = loadStripe('pk_test_51SFnF0ROWvZ0m785J38J20subms9zeVw92xxsdct2OVzHbIXF8Kueajcp4jxJblwBhozD1xDljC2UG1qDNOGOxTX00UiDpoLCI');
 
 // ============================================================================
-// COMPONENTE HIJO: FORMULARIO DE PAGO STRIPE (Debe estar dentro de <Elements>)
+// COMPONENTE HIJO: FORMULARIO DE PAGO STRIPE
 // ============================================================================
 const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSuccess }) => {
     const stripe = useStripe();
@@ -19,12 +19,8 @@ const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSucce
     const procesarPago = async (e) => {
         e.preventDefault();
 
-        if (numerosSeleccionados.length === 0) {
-            return setErrorStripe("Por favor, selecciona al menos un número en la cuadrícula.");
-        }
-        if (!stripe || !elements) {
-            return; 
-        }
+        if (numerosSeleccionados.length === 0) return setErrorStripe("Por favor, selecciona al menos un número en la cuadrícula.");
+        if (!stripe || !elements) return; 
 
         setProcesandoPago(true);
         setErrorStripe(null);
@@ -151,7 +147,7 @@ const Sorteos = () => {
                 setSorteos([{
                     _id: 'demo-1',
                     premio: 'Agapornis Fisher - Mutación Arlequín Azul',
-                    descripcion: 'Hermoso ejemplar papillero de 25 días. Criado a mano, dócil y con excelente genética. Incluye transportadora premium, guía de cuidados y asesoría.',
+                    descripcion: 'Hermoso ejemplar papillero de 25 días. Criado a mano, dócil y con excelente genética.',
                     fotoUrl: '/portada.png', 
                     precioBoleto: 150,
                     totalBoletos: 50,
@@ -195,8 +191,6 @@ const Sorteos = () => {
     };
 
     // MOCK DEL USUARIO LOGUEADO: 
-    // Esto simula tu usuario actual para poder ver sus boletos.
-    // Cambia esto por tu sistema real de autenticación (ej. auth.user?.email)
     const emailUsuarioActual = "josueponcearch@gmail.com"; 
 
     if (loading) {
@@ -210,7 +204,6 @@ const Sorteos = () => {
     return (
         <div className="min-h-screen relative pb-24 bg-[#F8F9FA] overflow-hidden notranslate" translate="no">
             
-            {/* ESTILOS Y ANIMACIONES CSS MEJORADAS */}
             <style>{`
                 @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
                 .animacion-entrada { animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
@@ -234,7 +227,6 @@ const Sorteos = () => {
                 @keyframes pulse-ring { 0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); } 100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
                 .anim-sorteando { animation: pulse-ring 2s infinite; }
                 
-                /* Scroll elegante para los boletos */
                 .scroll-boletos::-webkit-scrollbar { width: 6px; }
                 .scroll-boletos::-webkit-scrollbar-track { background: transparent; }
                 .scroll-boletos::-webkit-scrollbar-thumb { background: #6ee7b7; border-radius: 10px; }
@@ -243,7 +235,7 @@ const Sorteos = () => {
             <div className="absolute top-[10%] left-[-10%] w-96 h-96 bg-emerald-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse" />
             <div className="absolute bottom-[20%] right-[-10%] w-96 h-96 bg-teal-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse" />
 
-            {/* --- PANTALLA DE ÉXITO Y ENTREGA DE MÚLTIPLES BOLETOS --- */}
+            {/* --- PANTALLA DE ÉXITO --- */}
             {mensajeExito && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-emerald-900/90 backdrop-blur-md p-4">
                     <div className="bg-white p-8 md:p-12 rounded-[40px] text-center shadow-2xl max-w-lg w-full animacion-entrada max-h-[90vh] flex flex-col">
@@ -287,7 +279,7 @@ const Sorteos = () => {
                 </div>
             )}
 
-            {/* --- MODAL DE SELECCIÓN DE NÚMEROS Y PAGO --- */}
+            {/* --- MODAL DE COMPRA --- */}
             {modalCompra.show && modalCompra.sorteo && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
                     <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto relative animacion-entrada">
@@ -388,8 +380,8 @@ const Sorteos = () => {
                         const porcentaje = (vendidos / sorteo.totalBoletos) * 100;
                         const estaLleno = vendidos >= sorteo.totalBoletos;
                         
-                        // Lógica para detectar qué boletos le pertenecen al usuario logueado
-                        const misBoletos = sorteo.boletosVendidos?.filter(b => b.email === emailUsuarioActual) || [];
+                        // CORRECCIÓN: variable usuarioEmail
+                        const misBoletos = sorteo.boletosVendidos?.filter(b => b.usuarioEmail === emailUsuarioActual) || [];
 
                         return (
                             <div 
@@ -434,7 +426,6 @@ const Sorteos = () => {
                                         </div>
                                     </div>
 
-                                    {/* --- NUEVA LÓGICA: MOSTRAR MIS BOLETOS AL CLIENTE --- */}
                                     {misBoletos.length > 0 && (
                                         <div className="mb-8 p-6 bg-emerald-50 border-2 border-emerald-200 rounded-3xl shadow-sm">
                                             <p className="text-emerald-800 font-bold uppercase tracking-widest text-xs mb-3 flex items-center gap-2">
@@ -450,8 +441,64 @@ const Sorteos = () => {
                                         </div>
                                     )}
 
-                                    {/* --- GESTIÓN DINÁMICA DE ESTADOS --- */}
-                                    {sorteo.estado === 'ACTIVO' && !estaLleno ? (
+                                    {/* 🔥 CORRECCIÓN CRÍTICA DE ESTADOS: ORDEN DE EVALUACIÓN 🔥 */}
+                                    {sorteo.estado === 'FINALIZADO' ? (
+                                        
+                                        /* ESTADO 1: FINALIZADO (MUESTRA AL GANADOR COMO PRIORIDAD) */
+                                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 p-8 md:p-10 rounded-3xl text-center shadow-inner relative overflow-hidden">
+                                            <div className="absolute -right-6 -top-6 text-amber-500/10"><Trophy size={150} /></div>
+                                            <Trophy size={64} className="mx-auto text-amber-500 mb-6 relative z-10 drop-shadow-md" />
+                                            <h4 className="text-3xl font-black text-slate-800 mb-2 relative z-10 tracking-tight">¡Tenemos un Ganador!</h4>
+                                            
+                                            <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-amber-200 my-6 relative z-10 shadow-xl transform hover:scale-105 transition-transform duration-300">
+                                                <p className="text-sm font-bold text-amber-500 uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
+                                                    <Sparkles size={16} /> Felicidades a:
+                                                </p>
+                                                {/* CORRECCIÓN: variable nombreCliente */}
+                                                <p className="text-3xl md:text-4xl font-black text-slate-800 mb-3">
+                                                    {sorteo.ganador?.nombreCliente || 'Usuario Afortunado'}
+                                                </p>
+                                                <p className="text-slate-600 font-medium text-lg">
+                                                    Se llevó a este compañero alado con el boleto <br/>
+                                                    <span className="inline-block mt-2 font-black text-2xl text-amber-600 bg-amber-100 px-4 py-2 rounded-xl border border-amber-200">
+                                                        #{sorteo.ganador?.numeroBoleto || 'N/A'}
+                                                    </span>
+                                                </p>
+                                            </div>
+
+                                            <p className="text-sm font-bold text-slate-400 mt-4 relative z-10">Este resultado desaparecerá en 7 días. ¡Mantente atento a nuevos sorteos!</p>
+                                        </div>
+
+                                    ) : sorteo.estado === 'LLENO' || estaLleno ? (
+                                        
+                                        /* ESTADO 2: LLENO CON FECHA PROGRAMADA (SOLO SI NO ESTÁ FINALIZADO) */
+                                        <div className="bg-indigo-900 text-white p-8 rounded-3xl text-center shadow-2xl relative overflow-hidden">
+                                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30"></div>
+                                            
+                                            <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-2 animate-pulse z-20">
+                                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                                                124 Viendo
+                                            </div>
+
+                                            <div className="w-20 h-20 mx-auto bg-indigo-500 rounded-full flex items-center justify-center anim-sorteando mb-6 relative z-10 shadow-[0_0_30px_rgba(99,102,241,0.5)]">
+                                                <Clock size={32} className="text-white" />
+                                            </div>
+                                            <h4 className="text-2xl md:text-3xl font-black mb-2 relative z-10">¡Boletos Agotados!</h4>
+                                            <p className="text-indigo-200 relative z-10 mb-6 font-medium">La meta se cumplió. El sorteo se realizará en vivo el:</p>
+                                            
+                                            <div className="inline-block bg-indigo-800/80 backdrop-blur-sm border border-indigo-500/50 px-6 py-4 rounded-2xl relative z-10 shadow-lg w-full max-w-sm mx-auto">
+                                                <p className="text-lg md:text-xl font-black text-indigo-50 capitalize">
+                                                    {/* CORRECCIÓN: variable fechaSorteoPlaneada */}
+                                                    {sorteo.fechaSorteoPlaneada 
+                                                        ? new Date(sorteo.fechaSorteoPlaneada).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) 
+                                                        : 'Calculando fecha...'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                    ) : (
+                                        
+                                        /* ESTADO 3: ACTIVO Y LISTO PARA COMPRAR */
                                         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(16,185,129,0.08)] transition-shadow duration-500">
                                             <div className="mb-8">
                                                 <div className="flex justify-between items-end mb-3">
@@ -481,58 +528,6 @@ const Sorteos = () => {
                                                 <span className="relative z-10">Elegir Números y Comprar</span>
                                                 <ArrowRight size={20} className="relative z-10 group-hover/btn:translate-x-2 transition-transform" />
                                             </button>
-                                        </div>
-                                    ) : sorteo.estado === 'LLENO' || estaLleno ? (
-                                        
-                                        /* --- NUEVO ESTADO: LLENO CON FECHA PROGRAMADA --- */
-                                        <div className="bg-indigo-900 text-white p-8 rounded-3xl text-center shadow-2xl relative overflow-hidden">
-                                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30"></div>
-                                            
-                                            {/* Simulador de espectadores en vivo */}
-                                            <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-2 animate-pulse z-20">
-                                                <div className="w-2 h-2 bg-white rounded-full"></div>
-                                                124 Viendo
-                                            </div>
-
-                                            <div className="w-20 h-20 mx-auto bg-indigo-500 rounded-full flex items-center justify-center anim-sorteando mb-6 relative z-10 shadow-[0_0_30px_rgba(99,102,241,0.5)]">
-                                                <Clock size={32} className="text-white" />
-                                            </div>
-                                            <h4 className="text-2xl md:text-3xl font-black mb-2 relative z-10">¡Boletos Agotados!</h4>
-                                            <p className="text-indigo-200 relative z-10 mb-6 font-medium">La meta se cumplió. El sorteo se realizará en vivo el:</p>
-                                            
-                                            <div className="inline-block bg-indigo-800/80 backdrop-blur-sm border border-indigo-500/50 px-6 py-4 rounded-2xl relative z-10 shadow-lg w-full max-w-sm mx-auto">
-                                                <p className="text-lg md:text-xl font-black text-indigo-50 capitalize">
-                                                    {sorteo.fechaSorteoProgramado 
-                                                        ? new Date(sorteo.fechaSorteoProgramado).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) 
-                                                        : 'Calculando fecha...'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                    ) : (
-                                        
-                                        /* --- NUEVO ESTADO: FINALIZADO CON INFORMACIÓN DEL GANADOR --- */
-                                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 p-8 md:p-10 rounded-3xl text-center shadow-inner relative overflow-hidden">
-                                            <div className="absolute -right-6 -top-6 text-amber-500/10"><Trophy size={150} /></div>
-                                            <Trophy size={64} className="mx-auto text-amber-500 mb-6 relative z-10 drop-shadow-md" />
-                                            <h4 className="text-3xl font-black text-slate-800 mb-2 relative z-10 tracking-tight">¡Tenemos un Ganador!</h4>
-                                            
-                                            <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-amber-200 my-6 relative z-10 shadow-xl transform hover:scale-105 transition-transform duration-300">
-                                                <p className="text-sm font-bold text-amber-500 uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
-                                                    <Sparkles size={16} /> Felicidades a:
-                                                </p>
-                                                <p className="text-3xl md:text-4xl font-black text-slate-800 mb-3">
-                                                    {sorteo.ganador?.nombre || 'Usuario Afortunado'}
-                                                </p>
-                                                <p className="text-slate-600 font-medium text-lg">
-                                                    Se llevó a este compañero alado con el boleto <br/>
-                                                    <span className="inline-block mt-2 font-black text-2xl text-amber-600 bg-amber-100 px-4 py-2 rounded-xl border border-amber-200">
-                                                        #{sorteo.ganador?.numeroBoleto || 'N/A'}
-                                                    </span>
-                                                </p>
-                                            </div>
-
-                                            <p className="text-sm font-bold text-slate-400 mt-4 relative z-10">Este resultado desaparecerá en 7 días. ¡Mantente atento a nuevos sorteos!</p>
                                         </div>
                                     )}
                                 </div>
