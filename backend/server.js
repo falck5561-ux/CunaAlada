@@ -163,10 +163,18 @@ app.delete('/api/productos/:id', async (req, res) => {
    --- RUTAS PARA SORTEOS (VERSIÓN PREMIUM FINAL) --- 
    ======================================================= */
 
-// 1. Obtener Sorteos 
+// 1. Obtener Sorteos (CON LIMPIEZA AUTOMÁTICA DE 7 DÍAS)
 app.get('/api/sorteos', async (req, res) => {
     try {
-        const sorteos = await Sorteo.find().populate('aveId');
+        const haceUnaSemana = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+        // Trae los activos, los llenos, y SOLO los finalizados de la última semana
+        const sorteos = await Sorteo.find({
+            $or: [
+                { estado: { $ne: 'FINALIZADO' } }, 
+                { estado: 'FINALIZADO', updatedAt: { $gte: haceUnaSemana } } 
+            ]
+        }).populate('aveId');
         
         const sorteosFormateados = sorteos.map(sorteo => {
             const sorteoObj = sorteo.toObject();
@@ -258,12 +266,12 @@ app.post('/api/sorteos/:id/confirmar-compra', async (req, res) => {
             });
         });
 
+        // 🔥 LÓGICA AUTOMÁTICA MEJORADA 🔥
         // Si se vendieron todos los lugares, activar fase "LLENO"
         if (sorteo.boletosVendidos.length >= sorteo.totalBoletos) {
             sorteo.estado = 'LLENO';
-            let fechaSorteo = new Date();
-            fechaSorteo.setHours(fechaSorteo.getHours() + 24);
-            sorteo.fechaSorteoPlaneada = fechaSorteo;
+            // Programar fecha para dentro de 3 días exactos (3 días * 24 hrs * 60 min * 60 seg * 1000 ms)
+            sorteo.fechaSorteoPlaneada = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
         }
 
         await sorteo.save();
