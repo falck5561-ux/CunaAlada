@@ -1,46 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { GoogleLogin } from '@react-oauth/google';
-import axios from 'axios';
 import { Sparkles, ShieldCheck, Bird, LogOut, LayoutDashboard, Globe, ShieldAlert } from 'lucide-react';
 
+// Importamos la lógica abstraída
+import { useLogin } from '../hooks/useLogin';
+
 const Login = ({ setAutorizado }) => {
-    const [cargando, setCargando] = useState(false);
-    const [usuario, setUsuario] = useState(JSON.parse(localStorage.getItem('cuna_usuario')));
-    const API_URL = 'https://cunaalada-kitw.onrender.com';
-
-    const cerrarSesion = () => {
-        localStorage.clear();
-        setAutorizado(false);
-        setUsuario(null);
-        window.location.href = '/'; 
-    };
-
-    const handleGoogleSuccess = async (resToken) => {
-        setCargando(true);
-        try {
-            const res = await axios.post(`${API_URL}/api/auth/google`, {
-                token: resToken.credential
-            });
-
-            if (res.data.success) {
-                const user = res.data.usuario;
-                localStorage.setItem('cuna_token', res.data.token);
-                localStorage.setItem('cuna_usuario', JSON.stringify(user));
-                
-                if (user.rol === 'admin') {
-                    localStorage.setItem('adminToken', res.data.token);
-                    setAutorizado(true);
-                    window.location.href = '/admin'; 
-                } else {
-                    window.location.href = '/tienda';
-                }
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setCargando(false);
-        }
-    };
+    // Usamos el Custom Hook
+    const { usuario, cargando, cerrarSesion, handleGoogleSuccess } = useLogin(setAutorizado);
 
     // --- VISTA: PERFIL ACTIVO (CERRAR SESIÓN) ---
     if (usuario) {
@@ -76,7 +43,7 @@ const Login = ({ setAutorizado }) => {
     return (
         <div className="min-h-screen bg-white flex w-full overflow-hidden font-sans">
             
-            {/* Lado Izquierdo: Branding Cinemático (Se expande en PC) */}
+            {/* Lado Izquierdo: Branding Cinemático */}
             <div className="hidden lg:flex w-1/2 relative bg-[#060910] items-center justify-center p-20 overflow-hidden">
                 <img src="/portada.png" className="absolute inset-0 w-full h-full object-cover opacity-20 scale-110 animate-pulse-slow" alt="Cuna Alada" />
                 <div className="absolute inset-0 bg-gradient-to-br from-[#060910] via-transparent to-emerald-900/20" />
@@ -98,7 +65,7 @@ const Login = ({ setAutorizado }) => {
                 </div>
             </div>
 
-            {/* Lado Derecho: Acceso (Responsivo) */}
+            {/* Lado Derecho: Acceso */}
             <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-[#F8F9FA] relative">
                 <div className="lg:hidden absolute top-[-5%] left-[-5%] w-64 h-64 bg-emerald-100 rounded-full blur-[80px] opacity-60" />
 
@@ -114,7 +81,6 @@ const Login = ({ setAutorizado }) => {
                     </div>
 
                     <div className="bg-white p-10 rounded-[40px] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)] border border-slate-100 relative overflow-hidden group">
-                        {/* Brillo de fondo al pasar el mouse */}
                         <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-[40px] blur opacity-0 group-hover:opacity-5 transition duration-500"></div>
                         
                         <div className="space-y-10 relative z-10 text-center">
@@ -155,12 +121,6 @@ const Login = ({ setAutorizado }) => {
                     </footer>
                 </div>
             </div>
-
-            <style>{`
-                @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-                @keyframes reveal { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-                .animate-pulse-slow { animation: pulse 8s ease-in-out infinite; }
-            `}</style>
         </div>
     );
 };
