@@ -1,38 +1,19 @@
-// backend/models/Ave.js
 const mongoose = require('mongoose');
 
-const aveSchema = new mongoose.Schema({
-    nombre: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    mutacion: {
-        type: String, 
-        required: true
-    },
-    fechaNacimiento: {
-        type: Date,
-        required: true 
-    },
-    precio: {
-        type: Number,
-        required: true
-    },
-    fotoUrl: {
-        type: String, // Aquí guardaremos el link de la imagen
-        default: "https://via.placeholder.com/300"
-    },
-    estado: {
-        type: String,
-        enum: ['DISPONIBLE', 'RESERVADO', 'VENDIDO'],
-        default: 'DISPONIBLE'
-    },
-    descripcion: {
-        type: String // Para poner notas como "Portador de azul"
-    }
-}, {
-    timestamps: true // Crea automáticamente campos de "creado el..."
-});
+const AveSchema = new mongoose.Schema({
+    especie: String, 
+    mutacion: String, 
+    anillo: String, 
+    fechaNacimiento: String,
+    precio: Number, 
+    precioOriginal: Number, 
+    fotoUrl: String, 
+    enPromocion: { type: Boolean, default: false },
+    estado: { type: String, default: 'disponible' }, 
+    tokenRegistro: String,   
+    nombreAsignado: String, 
+    propietario: String, 
+    fechaVenta: Date
+}, { timestamps: true });
 
-module.exports = mongoose.model('Ave', aveSchema);
+module.exports = mongoose.model('Ave', AveSchema);

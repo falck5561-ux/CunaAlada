@@ -1,41 +1,44 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid'); 
 const multer = require('multer'); 
 const path = require('path');     
-require('dotenv').config();
 
-// --- IMPORTACIONES PARA GOOGLE LOGIN Y SEGURIDAD ---
+// --- SEGURIDAD Y PAGOS ---
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// --- IMPORTACIONES DE CLOUDINARY PARA FOTOS INMORTALES ---
+// --- CLOUDINARY ---
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// --- STRIPE CONECTADO DE FORMA SEGURA (Lee desde el archivo .env) ---
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// --- MODELOS ---
+// Aquí llamamos a los archivos que están en tu carpeta "models"
+const Ave = require('./models/Ave');
+const Producto = require('./models/Producto');
+const Sorteo = require('./models/Sorteo');
+const Usuario = require('./models/Usuario');
 
-// Configuración del Cliente de Google
+// --- INICIALIZACIÓN ---
+const app = express();
+const PORT = process.env.PORT || 5000;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '543150877659-0ta3446oi5lm3vbbqa1trga13occu2ht.apps.googleusercontent.com';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
-const app = express();
-const PORT = process.env.PORT || 5000;
-
-// --- MIDDLEWARE ---
+// --- MIDDLEWARES ---
 app.use(cors());
 app.use(express.json());
 
-// --- CONFIGURACIÓN DE CLOUDINARY ---
+// --- CONFIGURACIÓN DE STORAGE (FOTOS) ---
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// --- MOTOR DE FOTOS (Sube directo a la nube) ---
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -45,30 +48,15 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage: storage });
 
-// --- CONEXIÓN A MONGODB ---
+// --- BASE DE DATOS ---
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cuna-alada')
     .then(() => console.log('✅ MongoDB Conectado exitosamente'))
     .catch(err => console.error('❌ Error Mongo:', err));
 
-/* --- MODELOS (Base de Datos) --- */
-const AveSchema = new mongoose.Schema({
-    especie: String, mutacion: String, anillo: String, fechaNacimiento: String,
-    precio: Number, precioOriginal: Number, fotoUrl: String, enPromocion: { type: Boolean, default: false },
-    estado: { type: String, default: 'disponible' }, tokenRegistro: String,   
-    nombreAsignado: String, propietario: String, fechaVenta: Date
-});
-const Ave = mongoose.model('Ave', AveSchema);
 
-const ProductoSchema = new mongoose.Schema({
-    nombre: String, categoria: String, precio: Number, precioOriginal: Number, 
-    stock: Number, descripcion: String, fotoUrl: String, enPromocion: { type: Boolean, default: false }
-});
-const Producto = mongoose.model('Producto', ProductoSchema);
-
-const Sorteo = require('./models/Sorteo');
-const Usuario = require('./models/Usuario');
-
-/* --- RUTAS PARA AVES --- */
+/* =======================================================
+   1. RUTAS DE INVENTARIO (AVES)
+   ======================================================= */
 app.get('/api/aves', async (req, res) => {
     try { res.json(await Ave.find()); } catch (error) { res.status(500).json(error); }
 });
@@ -99,7 +87,10 @@ app.delete('/api/aves/:id', async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-/* --- RUTAS SISTEMA DE PROPIEDAD / REGISTRO --- */
+
+/* =======================================================
+   2. RUTAS DE PROPIEDAD Y ADOPCIÓN
+   ======================================================= */
 app.post('/api/aves/:id/generar-link', async (req, res) => {
     try {
         const token = uuidv4(); 
@@ -128,7 +119,10 @@ app.post('/api/adopcion/:token/confirmar', async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-/* --- RUTAS PARA PRODUCTOS --- */
+
+/* =======================================================
+   3. RUTAS DE PRODUCTOS
+   ======================================================= */
 app.get('/api/productos', async (req, res) => {
     try { res.json(await Producto.find()); } catch (error) { res.status(500).json(error); }
 });
@@ -159,16 +153,13 @@ app.delete('/api/productos/:id', async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-/* =======================================================
-   --- RUTAS PARA SORTEOS (VERSIÓN PREMIUM FINAL) --- 
-   ======================================================= */
 
-// 1. Obtener Sorteos (CON LIMPIEZA AUTOMÁTICA DE 7 DÍAS)
+/* =======================================================
+   4. RUTAS DE SORTEOS PREMIUM
+   ======================================================= */
 app.get('/api/sorteos', async (req, res) => {
     try {
         const haceUnaSemana = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-        // Trae los activos, los llenos, y SOLO los finalizados de la última semana
         const sorteos = await Sorteo.find({
             $or: [
                 { estado: { $ne: 'FINALIZADO' } }, 
@@ -189,21 +180,17 @@ app.get('/api/sorteos', async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-// 2. Admin: Crear Sorteo Y BLOQUEAR AVE
 app.post('/api/sorteos', async (req, res) => {
     try {
         const nuevoSorteo = new Sorteo(req.body);
         await nuevoSorteo.save();
-
         if (req.body.aveId) {
             await Ave.findByIdAndUpdate(req.body.aveId, { estado: 'reservado' });
         }
-
         res.json({ success: true, sorteo: nuevoSorteo });
     } catch (error) { res.status(500).json(error); }
 });
 
-// 2.5 Admin: Eliminar Sorteo 
 app.delete('/api/sorteos/:id', async (req, res) => {
     try {
         await Sorteo.findByIdAndDelete(req.params.id);
@@ -211,21 +198,18 @@ app.delete('/api/sorteos/:id', async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-// 3. Cliente: Crear intención de pago (Stripe) soportando MÚLTIPLES boletos
 app.post('/api/sorteos/crear-pago', async (req, res) => {
     try {
-        // Ahora esperamos "numerosElegidos" como un arreglo desde el frontend
         const { sorteoId, cantidad = 1, numerosElegidos } = req.body;
         const sorteo = await Sorteo.findById(sorteoId);
         
         if (!sorteo || sorteo.estado !== 'ACTIVO') return res.status(400).json({ error: 'Sorteo no disponible' });
 
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: (sorteo.precioBoleto * cantidad) * 100, // Precio total
+            amount: (sorteo.precioBoleto * cantidad) * 100, 
             currency: 'mxn', 
             metadata: { 
                 sorteoId: sorteo._id.toString(),
-                // Guardamos los números como texto (ej: "5,12,30") en los metadatos de Stripe
                 numerosBoletos: numerosElegidos && Array.isArray(numerosElegidos) ? numerosElegidos.join(',') : ''
             }
         });
@@ -233,10 +217,8 @@ app.post('/api/sorteos/crear-pago', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Error en pago' }); }
 });
 
-// 4. Cliente: Confirmar Compra y Guardar MÚLTIPLES Números Elegidos
 app.post('/api/sorteos/:id/confirmar-compra', async (req, res) => {
     try {
-        // Ahora recibimos "numerosBoletos" (Array)
         const { nombre, email, telefono, numerosBoletos, idPago } = req.body;
         const sorteo = await Sorteo.findById(req.params.id);
 
@@ -244,7 +226,6 @@ app.post('/api/sorteos/:id/confirmar-compra', async (req, res) => {
             return res.status(400).json({ success: false, message: 'El sorteo no está disponible.' });
         }
 
-        // VALIDACIÓN DE SEGURIDAD: Verificamos si ALGUN de los boletos solicitados ya se vendió
         const boletosOcupados = sorteo.boletosVendidos.filter(b => numerosBoletos.includes(b.numeroBoleto));
         
         if (boletosOcupados.length > 0) {
@@ -255,22 +236,16 @@ app.post('/api/sorteos/:id/confirmar-compra', async (req, res) => {
             });
         }
 
-        // Si están libres, los guardamos todos mediante un loop
         numerosBoletos.forEach(numero => {
             sorteo.boletosVendidos.push({
-                nombreCliente: nombre,
-                telefonoCliente: telefono,
-                usuarioEmail: email,
-                numeroBoleto: parseInt(numero),
+                nombreCliente: nombre, telefonoCliente: telefono,
+                usuarioEmail: email, numeroBoleto: parseInt(numero),
                 idPagoStripe: idPago
             });
         });
 
-        // 🔥 LÓGICA AUTOMÁTICA MEJORADA 🔥
-        // Si se vendieron todos los lugares, activar fase "LLENO"
         if (sorteo.boletosVendidos.length >= sorteo.totalBoletos) {
             sorteo.estado = 'LLENO';
-            // Programar fecha para dentro de 3 días exactos (3 días * 24 hrs * 60 min * 60 seg * 1000 ms)
             sorteo.fechaSorteoPlaneada = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
         }
 
@@ -279,25 +254,20 @@ app.post('/api/sorteos/:id/confirmar-compra', async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-// 5. Admin: Revelar Ganador
 app.post('/api/sorteos/:id/revelar', async (req, res) => {
     try {
         const sorteo = await Sorteo.findById(req.params.id).populate('aveId');
-        
         if (sorteo.estado === 'FINALIZADO') return res.status(400).json({ success: false, message: 'El sorteo ya tiene ganador' });
 
-        // Elegir ganador al azar
         const indiceGanador = Math.floor(Math.random() * sorteo.boletosVendidos.length);
         const boletoGanador = sorteo.boletosVendidos[indiceGanador];
         
         sorteo.estado = 'FINALIZADO';
         sorteo.ganador = {
-            nombreCliente: boletoGanador.nombreCliente,
-            usuarioEmail: boletoGanador.usuarioEmail,
+            nombreCliente: boletoGanador.nombreCliente, usuarioEmail: boletoGanador.usuarioEmail,
             numeroBoleto: boletoGanador.numeroBoleto
         };
 
-        // Cambiar el estado del ave a "vendido" oficial
         if(sorteo.aveId) {
             sorteo.aveId.estado = 'vendido';
             sorteo.aveId.propietario = boletoGanador.nombreCliente;
@@ -309,7 +279,10 @@ app.post('/api/sorteos/:id/revelar', async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 });
 
-/* --- LOGIN INTELIGENTE CON GOOGLE --- */
+
+/* =======================================================
+   5. RUTAS DE AUTENTICACIÓN
+   ======================================================= */
 app.post('/api/auth/google', async (req, res) => {
     const { token } = req.body;
     try {
@@ -338,4 +311,4 @@ app.post('/api/auth/google', async (req, res) => {
     } catch (error) { res.status(401).json({ success: false }); }
 });
 
-app.listen(PORT, () => console.log(`🚀 Servidor de Cuna Alada System v6.0 (Sorteos Premium) corriendo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Servidor de Cuna Alada System v6.0 corriendo en puerto ${PORT}`));

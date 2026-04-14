@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const SorteoSchema = new mongoose.Schema({
-    // 1. EL PREMIO REAL: Vinculamos el sorteo a un Ave específica de tu inventario
+    // 1. EL PREMIO REAL: Vinculamos el sorteo a un Ave específica
     aveId: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Ave',
@@ -16,7 +16,7 @@ const SorteoSchema = new mongoose.Schema({
     
     // 3. MOTOR DE TICKETS
     boletosVendidos: [{
-        usuarioEmail: String,      // Clave para que el cliente vea "Sus Boletos" al iniciar sesión
+        usuarioEmail: String,      // Para que el cliente vea "Sus Boletos" al iniciar sesión
         nombreCliente: String,
         telefonoCliente: String,
         numeroBoleto: Number,      // Su número de la suerte (ej. Ticket #12)
