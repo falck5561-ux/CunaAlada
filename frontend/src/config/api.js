@@ -1,0 +1,1 @@
+export const API_URL = 'https://cunaalada-kitw.onrender.com/api';
