@@ -1,144 +1,27 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, RotateCcw, Zap, Palette, GraduationCap, HeartHandshake, Tag } from 'lucide-react';
+import { Sparkles, ArrowRight, RotateCcw, HeartHandshake, Tag } from 'lucide-react';
+import { useQuizAve } from '../hooks/useQuizAve';
 
 const QuizAve = ({ avesDisponibles = [] }) => {
-  
-  // --- CEREBRO AUTOMÁTICO V2 (CLASIFICADOR DE AVES) ---
-  const inventario = useMemo(() => {
-    const tienePalabra = (ave, palabras) => {
-      const texto = `${ave.mutacion || ''} ${ave.especie || ''} ${ave.nombre || ''}`.toLowerCase();
-      return palabras.some(p => texto.includes(p));
-    };
-
-    // Filtramos las listas reales de objetos
-    const listaVerdes = avesDisponibles.filter(ave => 
-      tienePalabra(ave, ['verde', 'ancestral', 'jade', 'clásico', 'clasico'])
-    );
-
-    const listaAzules = avesDisponibles.filter(ave => 
-      tienePalabra(ave, ['azul', 'blue', 'turquesa', 'violeta', 'cobalto'])
-    );
-
-    return { verdes: listaVerdes, azules: listaAzules };
-  }, [avesDisponibles]);
-
-  // --- ESTADOS ---
-  const [fase, setFase] = useState('intro');
-  const [pasoActual, setPasoActual] = useState(0);
-  const [respuestas, setRespuestas] = useState({});
-  const [aveGanadora, setAveGanadora] = useState(null); 
-  const [esAlternativa, setEsAlternativa] = useState(false);
-
-  const preguntas = [
-    {
-      id: 'energia',
-      pregunta: "¿Qué esperas de tu nuevo amigo?",
-      icono: <Zap size={24} className="text-yellow-500" />,
-      opciones: [
-        { label: "Compañía y tranquilidad", val: "tranquilo", icon: "🍃", desc: "Disfrutar momentos de calma juntos" },
-        { label: "Juego y diversión", val: "activo", icon: "⚡", desc: "Reírnos con sus ocurrencias" }
-      ]
-    },
-    {
-      id: 'color',
-      pregunta: "¿Qué colores te atraen más?",
-      icono: <Palette size={24} className="text-purple-500" />,
-      opciones: [
-        { label: "Verdes / Naturaleza", val: "verde", icon: "🌿", desc: "El color clásico de la selva" },
-        { label: "Azules / Cielo", val: "azul", icon: "💎", desc: "Tonos turquesas y brillantes" }
-      ]
-    },
-    {
-      id: 'experiencia',
-      pregunta: "¿Es tu primera vez criando?",
-      icono: <GraduationCap size={24} className="text-blue-500" />,
-      opciones: [
-        { label: "Sí, soy principiante", val: "novato", icon: "👶", desc: "Busco algo dócil para aprender" },
-        { label: "No, ya tengo experiencia", val: "experto", icon: "🎓", desc: "Conozco sus necesidades" }
-      ]
-    }
-  ];
-
-  const obtenerRandom = (array) => array[Math.floor(Math.random() * array.length)];
-
-  // --- LÓGICA FINAL ---
-  const procesarRespuesta = (valor) => {
-    // 1. Guardamos la respuesta actual
-    const respuestasFinales = { ...respuestas, [preguntas[pasoActual].id]: valor };
-    setRespuestas(respuestasFinales);
-
-    // 2. Si hay más preguntas, avanzamos
-    if (pasoActual < preguntas.length - 1) {
-      setPasoActual(pasoActual + 1);
-    } else {
-      // 3. Si era la última, calculamos el resultado INMEDIATAMENTE
-      setTimeout(() => {
-          let ave = null;
-          let alt = false;
-          const quiereVerde = respuestasFinales.color === 'verde';
-
-          if (quiereVerde) {
-            if (inventario.verdes.length > 0) ave = obtenerRandom(inventario.verdes);
-            else if (inventario.azules.length > 0) { ave = obtenerRandom(inventario.azules); alt = true; }
-          } else {
-            if (inventario.azules.length > 0) ave = obtenerRandom(inventario.azules);
-            else if (inventario.verdes.length > 0) { ave = obtenerRandom(inventario.verdes); alt = true; }
-          }
-          
-          setAveGanadora(ave);
-          setEsAlternativa(alt);
-          setFase('resultado');
-      }, 50);
-    }
-  };
-
-  const reiniciar = () => {
-    setFase('intro');
-    setPasoActual(0);
-    setRespuestas({});
-    setAveGanadora(null);
-  };
-
-  const obtenerTextos = () => {
-    if (!aveGanadora) return { titulo: "¡Ups!", desc: "Todos nuestros bebés ya tienen hogar por ahora." };
-
-    const esAveVerde = inventario.verdes.some(v => v._id === aveGanadora._id);
-    const nombreColor = esAveVerde ? "Verde Ancestral" : "Azul Turquesa";
-    
-    let descripcion = "";
-    let badge = "";
-
-    if (esAlternativa) {
-        descripcion = `Sabemos que buscabas otro color, ¡pero mira a quién tenemos aquí! Este bebé ${nombreColor} (Anillo ${aveGanadora.anillo}) está disponible y buscando familia. A veces el ave nos elige a nosotros. ¿No es hermoso?`;
-        badge = "¡Te presentamos una alternativa!";
-    } else {
-        descripcion = `¡Lo encontramos! Basado en tus respuestas, este hermoso ${nombreColor} es tu compañero ideal. Tiene la energía y personalidad que buscas.`;
-        badge = "¡Es un Match Perfecto!";
-    }
-
-    return { 
-        titulo: aveGanadora.mutacion || "Roseicollis",
-        subtitulo: `Anillo Oficial: #${aveGanadora.anillo}`,
-        desc: descripcion,
-        badge: badge,
-        colorBadge: esAlternativa ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
-    };
-  };
+  // Extraemos toda la lógica de nuestro Custom Hook
+  const {
+    fase,
+    pasoActual,
+    preguntas,
+    aveGanadora,
+    esAlternativa,
+    iniciarQuiz,
+    procesarRespuesta,
+    reiniciar,
+    obtenerTextos,
+    getImagenAve
+  } = useQuizAve(avesDisponibles);
 
   const slideVariants = {
     enter: { x: 50, opacity: 0 },
     center: { x: 0, opacity: 1 },
     exit: { x: -50, opacity: 0 }
-  };
-
-  // --- HELPER PARA OBTENER LA IMAGEN INTELIGENTE ---
-  const getImagenAve = (ave) => {
-      if (!ave) return "/portada.png";
-      const ruta = ave.foto || ave.fotoUrl;
-      if (!ruta) return "/portada.png";
-      if (ruta.startsWith('http')) return ruta;
-      return `https://cunaalada-kitw.onrender.com${ruta}`;
   };
 
   return (
@@ -157,7 +40,7 @@ const QuizAve = ({ avesDisponibles = [] }) => {
               </div>
               <h3 className="text-3xl font-black text-slate-800 mb-3 tracking-tight">Asistente de Adopción</h3>
               <p className="text-slate-500 mb-8 text-lg">Responde 3 preguntas y nuestra IA encontrará al bebé disponible perfecto para ti.</p>
-              <button onClick={() => setFase('preguntas')} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-xl active:scale-95">
+              <button onClick={iniciarQuiz} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-xl active:scale-95">
                 Encontrar mi Ave <ArrowRight size={20} />
               </button>
             </motion.div>
@@ -192,10 +75,9 @@ const QuizAve = ({ avesDisponibles = [] }) => {
             </motion.div>
           )}
 
-          {/* FASE 3: RESULTADO (AVE REAL) */}
+          {/* FASE 3: RESULTADO */}
           {fase === 'resultado' && (
             <motion.div key="resultado" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
-              
               {aveGanadora ? (
                  <>
                     <div className={`inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-4 ${obtenerTextos().colorBadge}`}>
@@ -203,15 +85,12 @@ const QuizAve = ({ avesDisponibles = [] }) => {
                     </div>
                     
                     <div className="relative w-64 h-64 mx-auto mb-6 group rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
-                        
-                        {/* IMAGEN CORREGIDA INTELIGENTE */}
                         <img 
                             src={getImagenAve(aveGanadora)}
                             alt="Ave Ganadora" 
                             className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110"
                             onError={(e) => { e.target.onerror = null; e.target.src = "/portada.png"; }}
                         />
-                        
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-white text-left">
                            <p className="text-xs font-bold opacity-80">Disponible ahora</p>
                         </div>
