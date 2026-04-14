@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import axios from 'axios';
+import React from 'react';
 import { 
-  ShoppingBag, X, MessageCircle, Search, 
+  ShoppingBag, X, MessageCircle, 
   ShoppingCart, Trash2, Plus, Minus, Tag, Info
 } from 'lucide-react';
+
+// Importamos nuestra lógica
+import { useTienda } from '../hooks/useTienda';
 
 /* --- COMPONENTES UI (Toast) --- */
 const Toast = ({ mensaje, tipo }) => (
@@ -16,152 +18,17 @@ const Toast = ({ mensaje, tipo }) => (
 );
 
 const Tienda = () => {
-  // --- ESTADOS ---
-  const [productos, setProductos] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(null);
-  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-  const [carritoAbierto, setCarritoAbierto] = useState(false);
-  const [notificacion, setNotificacion] = useState(null);
-  
-  // Filtros
-  const [busqueda, setBusqueda] = useState('');
-  const [categoriaActiva, setCategoriaActiva] = useState('Todos');
-  const [orden, setOrden] = useState('relevancia');
-
-  // Carrito persistente
-  const [carrito, setCarrito] = useState(() => {
-    const guardado = localStorage.getItem('cuna-carrito');
-    return guardado ? JSON.parse(guardado) : [];
-  });
-
-  const categorias = ['Todos', 'Alimento', 'Juguetes', 'Accesorios', 'Salud'];
-
-  useEffect(() => { obtenerProductos(); }, []);
-  useEffect(() => { localStorage.setItem('cuna-carrito', JSON.stringify(carrito)); }, [carrito]);
-
-  const obtenerProductos = async () => {
-    setCargando(true);
-    try {
-      const res = await axios.get('https://cunaalada-kitw.onrender.com/api/productos');
-      setProductos(res.data);
-    } catch (err) { setError('Error de conexión'); } finally { setCargando(false); }
-  };
-
-  /* --- OCULTAR FLOTANTES EXTERNOS --- */
-  useEffect(() => {
-    if (carritoAbierto) {
-      document.body.classList.add('modo-carrito-abierto');
-    } else {
-      document.body.classList.remove('modo-carrito-abierto');
-    }
-    return () => document.body.classList.remove('modo-carrito-abierto');
-  }, [carritoAbierto]);
-
-  const mostrarNotificacion = (msj, tipo = 'success') => {
-    setNotificacion({ msj, tipo });
-    setTimeout(() => setNotificacion(null), 3000);
-  };
-
-  // --- LÓGICA CARRITO CON VALIDACIÓN DE STOCK ---
-  const modificarCantidad = (id, delta, e) => {
-    if(e) e.stopPropagation(); 
-    
-    setCarrito(prev => {
-      // Encontrar el item para validar antes de cambiar
-      const itemActual = prev.find(p => p._id === id);
-      
-      // Validación: Si queremos sumar (+) y ya tenemos todo el stock
-      if (itemActual && delta > 0 && itemActual.cantidad >= itemActual.stock) {
-        mostrarNotificacion(`¡Solo quedan ${itemActual.stock} unidades!`, 'error');
-        return prev; // Retornamos el estado anterior sin cambios
-      }
-
-      return prev.map(item => {
-        if (item._id === id) {
-          const nuevaCantidad = Math.max(0, item.cantidad + delta);
-          return { ...item, cantidad: nuevaCantidad };
-        }
-        return item;
-      }).filter(item => item.cantidad > 0);
-    });
-  };
-
-  const agregarAlCarrito = (producto, e) => {
-    if(e) e.stopPropagation();
-
-    // Verificamos si ya está en el carrito para checar el stock acumulado
-    const itemEnCarrito = carrito.find(item => item._id === producto._id);
-    const cantidadActual = itemEnCarrito ? itemEnCarrito.cantidad : 0;
-
-    if (cantidadActual >= producto.stock) {
-       mostrarNotificacion(`¡Stock límite alcanzado (${producto.stock})!`, 'error');
-       return;
-    }
-
-    setCarrito(prev => {
-      const existe = prev.find(item => item._id === producto._id);
-      if (existe) {
-        return prev.map(item => item._id === producto._id ? { ...item, cantidad: item.cantidad + 1 } : item);
-      }
-      return [...prev, { ...producto, cantidad: 1 }];
-    });
-    
-    mostrarNotificacion(`¡${producto.nombre} agregado!`);
-    if(productoSeleccionado) setProductoSeleccionado(null);
-  };
-
-  const eliminarDelCarrito = (id) => {
-    setCarrito(prev => prev.filter(item => item._id !== id));
-  };
-
-  const totalCarrito = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
-
-  const generarLinkWhatsApp = () => {
-    let mensaje = "Hola Cuna Alada 🦜, mi pedido:\n\n";
-    carrito.forEach(item => { mensaje += `▪️ ${item.cantidad}x ${item.nombre} - $${item.precio * item.cantidad}\n`; });
-    mensaje += `\n💰 *TOTAL: $${totalCarrito}*`;
-    return `https://wa.me/5219811333772?text=${encodeURIComponent(mensaje)}`;
-  };
-
-  // Filtros Memoized
-  const productosProcesados = useMemo(() => {
-    let res = [...productos];
-    if (categoriaActiva !== 'Todos') res = res.filter(p => p.categoria === categoriaActiva);
-    if (busqueda) res = res.filter(p => p.nombre.toLowerCase().includes(busqueda.toLowerCase()));
-    if (orden === 'menor_precio') res.sort((a, b) => a.precio - b.precio);
-    if (orden === 'mayor_precio') res.sort((a, b) => b.precio - a.precio);
-    return res;
-  }, [productos, categoriaActiva, busqueda, orden]);
+  // Extraemos todo lo que necesitamos del Custom Hook
+  const {
+    cargando, notificacion, carritoAbierto, setCarritoAbierto,
+    productoSeleccionado, setProductoSeleccionado, busqueda, setBusqueda,
+    categoriaActiva, setCategoriaActiva, categorias, productosProcesados,
+    carrito, modificarCantidad, agregarAlCarrito, eliminarDelCarrito,
+    totalCarrito, generarLinkWhatsApp
+  } = useTienda();
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] font-sans text-slate-800 pb-20 relative">
-      <style>{`
-        /* ANIMACIÓN MODAL */
-        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .modal-animada { animation: scaleIn 0.2s ease-out forwards; }
-
-        /* ANIMACIÓN CARRITO (NUEVO) */
-        @keyframes slideInRight { 
-          from { transform: translateX(100%); opacity: 0.5; } 
-          to { transform: translateX(0); opacity: 1; } 
-        }
-        @keyframes fadeIn { 
-          from { opacity: 0; } 
-          to { opacity: 1; } 
-        }
-        .drawer-entrada { animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .backdrop-entrada { animation: fadeIn 0.3s ease-out forwards; }
-
-        /* CORRECCIÓN WHATSAPP */
-        body.modo-carrito-abierto .whatsapp-float,
-        body.modo-carrito-abierto .whatsapp-btn,
-        body.modo-carrito-abierto a[href*="wa.me"]:not(.btn-checkout-interno) { 
-           display: none !important; 
-           opacity: 0 !important;
-           pointer-events: none !important;
-        }
-      `}</style>
 
       {notificacion && <Toast mensaje={notificacion.msj} tipo={notificacion.tipo} />}
 
@@ -198,7 +65,6 @@ const Tienda = () => {
             const cantidadLlevada = itemEnCarrito ? itemEnCarrito.cantidad : 0;
             const esOferta = prod.precioOriginal > prod.precio;
             const porcentaje = esOferta ? Math.round(((prod.precioOriginal - prod.precio)/prod.precioOriginal)*100) : 0;
-            // Verificamos si podemos agregar más
             const sinStock = cantidadLlevada >= prod.stock;
 
             return (
@@ -234,17 +100,17 @@ const Tienda = () => {
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         {cantidadLlevada > 0 ? (
                           <div className="flex items-center bg-gray-100 rounded-lg p-1">
-                            <button onClick={() => modificarCantidad(prod._id, -1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-md text-gray-700 hover:text-red-500 font-bold shadow-sm">-</button>
+                            <button onClick={(e) => { e.stopPropagation(); modificarCantidad(prod._id, -1); }} className="w-7 h-7 flex items-center justify-center bg-white rounded-md text-gray-700 hover:text-red-500 font-bold shadow-sm">-</button>
                             <span className="w-8 text-center font-bold text-sm text-gray-800">{cantidadLlevada}</span>
                             <button 
-                              onClick={() => modificarCantidad(prod._id, 1)} 
+                              onClick={(e) => { e.stopPropagation(); modificarCantidad(prod._id, 1); }} 
                               className={`w-7 h-7 flex items-center justify-center rounded-md font-bold shadow-sm transition-colors ${sinStock ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
                             >
                               +
                             </button>
                           </div>
                         ) : (
-                          <button onClick={(e) => agregarAlCarrito(prod, e)} className={`p-2 rounded-lg transition-colors shadow-md ${esOferta ? 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white' : 'bg-gray-900 text-white hover:bg-emerald-600'}`}><ShoppingCart size={18} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); agregarAlCarrito(prod); }} className={`p-2 rounded-lg transition-colors shadow-md ${esOferta ? 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white' : 'bg-gray-900 text-white hover:bg-emerald-600'}`}><ShoppingCart size={18} /></button>
                         )}
                       </div>
                     )}
@@ -256,13 +122,11 @@ const Tienda = () => {
         </div>
       </div>
 
-      {/* DRAWER CARRITO (CON ANIMACIÓN) */}
+      {/* DRAWER CARRITO */}
       {carritoAbierto && (
         <div className="fixed inset-0 z-[100] flex justify-end">
-          {/* Backdrop con FadeIn */}
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm backdrop-entrada" onClick={() => setCarritoAbierto(false)}></div>
           
-          {/* Panel con SlideIn */}
           <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col drawer-entrada">
             <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white shadow-sm z-10">
               <h2 className="text-xl font-black flex items-center gap-2 text-gray-800"><ShoppingBag className="text-emerald-600"/> Tu Pedido</h2>
