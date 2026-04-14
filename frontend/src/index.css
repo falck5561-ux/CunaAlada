@@ -56,3 +56,39 @@ body {
 .group:hover .shine-effect {
   animation: shine 1.5s infinite linear;
 }
+
+/* --- Animaciones Sorteos --- */
+@keyframes fadeInUp { 
+  from { opacity: 0; transform: translateY(30px); } 
+  to { opacity: 1; transform: translateY(0); } 
+}
+.animacion-entrada { animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes popIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.pop-in {
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  opacity: 0;
+}
+
+.barra-brillo {
+  position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
+  animation: brillo 2.5s infinite;
+}
+@keyframes brillo { 100% { left: 200%; } }
+
+@keyframes pulse-ring { 
+  0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 
+  70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); } 
+  100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } 
+}
+.anim-sorteando { animation: pulse-ring 2s infinite; }
+
+/* Scrollbar personalizada para la cuadrícula de boletos */
+.scroll-boletos::-webkit-scrollbar { width: 6px; }
+.scroll-boletos::-webkit-scrollbar-track { background: transparent; }
+.scroll-boletos::-webkit-scrollbar-thumb { background: #6ee7b7; border-radius: 10px; }

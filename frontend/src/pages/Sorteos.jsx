@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { Ticket, Trophy, CreditCard, Sparkles, ShieldCheck, Clock, ArrowRight, X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+
+// Importamos nuestra lógica separada
+import { useSorteos } from '../hooks/useSorteos';
 
 // --- INICIALIZACIÓN DE STRIPE ---
 const stripePromise = loadStripe('pk_test_51SFnF0ROWvZ0m785J38J20subms9zeVw92xxsdct2OVzHbIXF8Kueajcp4jxJblwBhozD1xDljC2UG1qDNOGOxTX00UiDpoLCI');
@@ -37,11 +40,7 @@ const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSucce
             const result = await stripe.confirmCardPayment(clientSecret, {
                 payment_method: {
                     card: elements.getElement(CardElement),
-                    billing_details: {
-                        name: datos.nombre,
-                        email: datos.email,
-                        phone: datos.telefono
-                    }
+                    billing_details: { name: datos.nombre, email: datos.email, phone: datos.telefono }
                 }
             });
 
@@ -51,13 +50,9 @@ const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSucce
             } else {
                 if (result.paymentIntent.status === 'succeeded') {
                     await axios.post(`https://cunaalada-kitw.onrender.com/api/sorteos/${sorteo._id}/confirmar-compra`, {
-                        nombre: datos.nombre,
-                        email: datos.email,
-                        telefono: datos.telefono,
-                        numerosBoletos: numerosSeleccionados,
-                        idPago: result.paymentIntent.id
+                        nombre: datos.nombre, email: datos.email, telefono: datos.telefono,
+                        numerosBoletos: numerosSeleccionados, idPago: result.paymentIntent.id
                     });
-
                     onSuccess(numerosSeleccionados); 
                 }
             }
@@ -130,68 +125,13 @@ const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSucce
 // COMPONENTE PRINCIPAL: VISTA DE SORTEOS
 // ============================================================================
 const Sorteos = () => {
-    const [sorteos, setSorteos] = useState([]);
-    const [loading, setLoading] = useState(true);
-    
-    const [modalCompra, setModalCompra] = useState({ show: false, sorteo: null });
-    const [numerosSeleccionados, setNumerosSeleccionados] = useState([]); 
-    const [datosCliente, setDatosCliente] = useState({ nombre: '', email: '', telefono: '' });
-    const [mensajeExito, setMensajeExito] = useState(null);
-
-    const cargarSorteos = async () => {
-        try {
-            const res = await axios.get('https://cunaalada-kitw.onrender.com/api/sorteos');
-            if (res.data && res.data.length > 0) {
-                setSorteos(res.data);
-            } else {
-                setSorteos([{
-                    _id: 'demo-1',
-                    premio: 'Agapornis Fisher - Mutación Arlequín Azul',
-                    descripcion: 'Hermoso ejemplar papillero de 25 días. Criado a mano, dócil y con excelente genética.',
-                    fotoUrl: '/portada.png', 
-                    precioBoleto: 150,
-                    totalBoletos: 50,
-                    boletosVendidos: [], 
-                    estado: 'ACTIVO'
-                }]);
-            }
-        } catch (error) {
-            console.error("Error al cargar sorteos:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        cargarSorteos();
-        const interval = setInterval(cargarSorteos, 10000); 
-        return () => clearInterval(interval);
-    }, []);
-
-    const abrirModal = (sorteo) => {
-        setModalCompra({ show: true, sorteo });
-        setNumerosSeleccionados([]); 
-        setDatosCliente({ nombre: '', email: '', telefono: '' }); 
-    };
-
-    const toggleNumero = (n) => {
-        setNumerosSeleccionados(prev => {
-            if (prev.includes(n)) {
-                return prev.filter(num => num !== n);
-            } else {
-                return [...prev, n];
-            }
-        });
-    };
-
-    const handlePagoExitoso = (boletosComprados) => {
-        setMensajeExito(boletosComprados);
-        setModalCompra({ show: false, sorteo: null });
-        cargarSorteos(); 
-    };
-
-    // MOCK DEL USUARIO LOGUEADO: 
-    const emailUsuarioActual = "josueponcearch@gmail.com"; 
+    // Usamos nuestro Custom Hook
+    const { 
+        sorteos, loading, modalCompra, setModalCompra,
+        numerosSeleccionados, datosCliente, setDatosCliente,
+        mensajeExito, setMensajeExito,
+        abrirModal, toggleNumero, handlePagoExitoso, emailUsuarioActual
+    } = useSorteos();
 
     if (loading) {
         return (
@@ -204,34 +144,6 @@ const Sorteos = () => {
     return (
         <div className="min-h-screen relative pb-24 bg-[#F8F9FA] overflow-hidden notranslate" translate="no">
             
-            <style>{`
-                @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-                .animacion-entrada { animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-                
-                @keyframes popIn {
-                    0% { transform: scale(0.5); opacity: 0; }
-                    70% { transform: scale(1.1); opacity: 1; }
-                    100% { transform: scale(1); opacity: 1; }
-                }
-                .pop-in {
-                    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-                    opacity: 0;
-                }
-
-                .barra-brillo {
-                    position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-                    background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
-                    animation: brillo 2.5s infinite;
-                }
-                @keyframes brillo { 100% { left: 200%; } }
-                @keyframes pulse-ring { 0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); } 100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
-                .anim-sorteando { animation: pulse-ring 2s infinite; }
-                
-                .scroll-boletos::-webkit-scrollbar { width: 6px; }
-                .scroll-boletos::-webkit-scrollbar-track { background: transparent; }
-                .scroll-boletos::-webkit-scrollbar-thumb { background: #6ee7b7; border-radius: 10px; }
-            `}</style>
-
             <div className="absolute top-[10%] left-[-10%] w-96 h-96 bg-emerald-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse" />
             <div className="absolute bottom-[20%] right-[-10%] w-96 h-96 bg-teal-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse" />
 
@@ -239,7 +151,6 @@ const Sorteos = () => {
             {mensajeExito && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-emerald-900/90 backdrop-blur-md p-4">
                     <div className="bg-white p-8 md:p-12 rounded-[40px] text-center shadow-2xl max-w-lg w-full animacion-entrada max-h-[90vh] flex flex-col">
-                        
                         <div className="flex-shrink-0">
                             <CheckCircle2 size={64} className="text-emerald-500 mx-auto mb-4 animate-bounce" />
                             <h2 className="text-3xl font-black text-slate-800 mb-2">¡Compra Exitosa!</h2>
@@ -268,10 +179,7 @@ const Sorteos = () => {
                         </div>
 
                         <div className="flex-shrink-0">
-                            <button 
-                                onClick={() => setMensajeExito(null)} 
-                                className="w-full bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-emerald-600 transition-all shadow-lg"
-                            >
+                            <button onClick={() => setMensajeExito(null)} className="w-full bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-emerald-600 transition-all shadow-lg">
                                 Entendido
                             </button>
                         </div>
@@ -315,16 +223,11 @@ const Sorteos = () => {
 
                                         return (
                                             <button 
-                                                key={n}
-                                                type="button"
-                                                disabled={ocupado}
-                                                onClick={() => toggleNumero(n)}
+                                                key={n} type="button" disabled={ocupado} onClick={() => toggleNumero(n)}
                                                 className={`aspect-square rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-200
-                                                ${ocupado 
-                                                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300 opacity-50' 
-                                                    : estaSeleccionado 
-                                                        ? 'bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-200 border-2 border-emerald-600' 
-                                                        : 'bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200 hover:border-emerald-200'}`}
+                                                ${ocupado ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300 opacity-50' 
+                                                : estaSeleccionado ? 'bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-200 border-2 border-emerald-600' 
+                                                : 'bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200 hover:border-emerald-200'}`}
                                             >
                                                 {n}
                                             </button>
@@ -349,8 +252,7 @@ const Sorteos = () => {
                                     <FormularioPago 
                                         sorteo={modalCompra.sorteo}
                                         numerosSeleccionados={numerosSeleccionados}
-                                        datos={datosCliente}
-                                        setDatos={setDatosCliente}
+                                        datos={datosCliente} setDatos={setDatosCliente}
                                         onSuccess={handlePagoExitoso}
                                     />
                                 </Elements>
@@ -361,7 +263,6 @@ const Sorteos = () => {
             )}
 
             <div className="container mx-auto px-6 py-12 relative z-10">
-                
                 <div className="text-center mb-20 animacion-entrada" style={{ animationDelay: '0.1s' }}>
                     <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-full border border-emerald-100 text-emerald-700 font-extrabold text-xs uppercase tracking-widest mb-6 shadow-sm hover:shadow-md transition-all">
                         <Sparkles size={16} className="text-emerald-500 animate-pulse" /> Sorteos Exclusivos
@@ -379,8 +280,6 @@ const Sorteos = () => {
                         const vendidos = sorteo.boletosVendidos?.length || 0;
                         const porcentaje = (vendidos / sorteo.totalBoletos) * 100;
                         const estaLleno = vendidos >= sorteo.totalBoletos;
-                        
-                        // CORRECCIÓN: variable usuarioEmail
                         const misBoletos = sorteo.boletosVendidos?.filter(b => b.usuarioEmail === emailUsuarioActual) || [];
 
                         return (
@@ -441,10 +340,7 @@ const Sorteos = () => {
                                         </div>
                                     )}
 
-                                    {/* 🔥 CORRECCIÓN CRÍTICA DE ESTADOS: ORDEN DE EVALUACIÓN 🔥 */}
                                     {sorteo.estado === 'FINALIZADO' ? (
-                                        
-                                        /* ESTADO 1: FINALIZADO (MUESTRA AL GANADOR COMO PRIORIDAD) */
                                         <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 p-8 md:p-10 rounded-3xl text-center shadow-inner relative overflow-hidden">
                                             <div className="absolute -right-6 -top-6 text-amber-500/10"><Trophy size={150} /></div>
                                             <Trophy size={64} className="mx-auto text-amber-500 mb-6 relative z-10 drop-shadow-md" />
@@ -454,7 +350,6 @@ const Sorteos = () => {
                                                 <p className="text-sm font-bold text-amber-500 uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
                                                     <Sparkles size={16} /> Felicidades a:
                                                 </p>
-                                                {/* CORRECCIÓN: variable nombreCliente */}
                                                 <p className="text-3xl md:text-4xl font-black text-slate-800 mb-3">
                                                     {sorteo.ganador?.nombreCliente || 'Usuario Afortunado'}
                                                 </p>
@@ -465,21 +360,13 @@ const Sorteos = () => {
                                                     </span>
                                                 </p>
                                             </div>
-
-                                            <p className="text-sm font-bold text-slate-400 mt-4 relative z-10">Este resultado desaparecerá en 7 días. ¡Mantente atento a nuevos sorteos!</p>
+                                            <p className="text-sm font-bold text-slate-400 mt-4 relative z-10">Este resultado desaparecerá en 7 días.</p>
                                         </div>
 
                                     ) : sorteo.estado === 'LLENO' || estaLleno ? (
-                                        
-                                        /* ESTADO 2: LLENO CON FECHA PROGRAMADA (SOLO SI NO ESTÁ FINALIZADO) */
                                         <div className="bg-indigo-900 text-white p-8 rounded-3xl text-center shadow-2xl relative overflow-hidden">
                                             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30"></div>
                                             
-                                            <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-2 animate-pulse z-20">
-                                                <div className="w-2 h-2 bg-white rounded-full"></div>
-                                                124 Viendo
-                                            </div>
-
                                             <div className="w-20 h-20 mx-auto bg-indigo-500 rounded-full flex items-center justify-center anim-sorteando mb-6 relative z-10 shadow-[0_0_30px_rgba(99,102,241,0.5)]">
                                                 <Clock size={32} className="text-white" />
                                             </div>
@@ -488,7 +375,6 @@ const Sorteos = () => {
                                             
                                             <div className="inline-block bg-indigo-800/80 backdrop-blur-sm border border-indigo-500/50 px-6 py-4 rounded-2xl relative z-10 shadow-lg w-full max-w-sm mx-auto">
                                                 <p className="text-lg md:text-xl font-black text-indigo-50 capitalize">
-                                                    {/* CORRECCIÓN: variable fechaSorteoPlaneada */}
                                                     {sorteo.fechaSorteoPlaneada 
                                                         ? new Date(sorteo.fechaSorteoPlaneada).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) 
                                                         : 'Calculando fecha...'}
@@ -497,8 +383,6 @@ const Sorteos = () => {
                                         </div>
 
                                     ) : (
-                                        
-                                        /* ESTADO 3: ACTIVO Y LISTO PARA COMPRAR */
                                         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(16,185,129,0.08)] transition-shadow duration-500">
                                             <div className="mb-8">
                                                 <div className="flex justify-between items-end mb-3">
