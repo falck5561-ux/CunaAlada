@@ -283,3 +283,23 @@ body.modo-carrito-abierto a[href*="wa.me"]:not(.btn-checkout-interno) {
   opacity: 0.5;
   pointer-events: none;
 }
+
+/* --- Animaciones de la Jaula Interactiva --- */
+@keyframes swing { 
+  0% { transform: rotate(2deg); } 
+  50% { transform: rotate(-2deg); } 
+  100% { transform: rotate(2deg); } 
+}
+.anim-swing { 
+  animation: swing 6s infinite ease-in-out; 
+}
+.pixelated { 
+  image-rendering: pixelated; 
+} 
+.no-scrollbar::-webkit-scrollbar { 
+  display: none; 
+}
+.no-scrollbar { 
+  -ms-overflow-style: none; 
+  scrollbar-width: none; 
+}
