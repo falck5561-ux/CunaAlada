@@ -14,9 +14,6 @@ const jwt = require('jsonwebtoken');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// --- STRIPE CONECTADO DE FORMA SEGURA (Lee desde el archivo .env) ---
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
 // Configuración del Cliente de Google
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '543150877659-0ta3446oi5lm3vbbqa1trga13occu2ht.apps.googleusercontent.com';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -29,13 +26,18 @@ app.use(cors());
 app.use(express.json());
 
 // STRIPE CONFIG
-const express = require("express");
-const cors = require("cors");
-require("dotenv").config();
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-const Stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-
-
+const session = await stripe.checkout.sessions.create({
+  success_url: 'https://example.com/success',
+  line_items: [
+    {
+      price: 'price_1MotwRLkdIwHu7ixYcPLm5uZ',
+      quantity: 2,
+    },
+  ],
+  mode: 'payment',
+});
 
 // --- CONFIGURACIÓN DE CLOUDINARY ---
 cloudinary.config({
