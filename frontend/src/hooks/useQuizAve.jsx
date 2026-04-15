@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Zap, Palette, GraduationCap } from 'lucide-react';
+// 1. Importamos la base de la URL
+import { BASE_URL } from '../config/api'; 
 
 export const useQuizAve = (avesDisponibles = []) => {
   const [fase, setFase] = useState('intro');
@@ -66,7 +68,6 @@ export const useQuizAve = (avesDisponibles = []) => {
     if (pasoActual < preguntas.length - 1) {
       setPasoActual(pasoActual + 1);
     } else {
-      // Cálculo del resultado con delay para efecto visual
       setTimeout(() => {
           let ave = null;
           let alt = false;
@@ -122,12 +123,17 @@ export const useQuizAve = (avesDisponibles = []) => {
     };
   };
 
+  // 2. CORRECCIÓN DE IMAGEN DINÁMICA
   const getImagenAve = (ave) => {
       if (!ave) return "/portada.png";
       const ruta = ave.foto || ave.fotoUrl;
       if (!ruta) return "/portada.png";
+      
+      // Si ya es una URL completa (Cloudinary), devuélvela tal cual
       if (ruta.startsWith('http')) return ruta;
-      return `https://cunaalada-kitw.onrender.com${ruta}`;
+      
+      // Si es una ruta local, usa el BASE_URL dinámico
+      return `${BASE_URL}${ruta}`;
   };
 
   return {

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import confetti from 'canvas-confetti';
+// 1. Importamos las URLs inteligentes
+import { API_URL, BASE_URL } from '../config/api'; 
 
 export const useRegistro = (token) => {
     const [ave, setAve] = useState(null);
@@ -8,11 +10,12 @@ export const useRegistro = (token) => {
     const [paso, setPaso] = useState(1);
     const [cargandoEnvio, setCargandoEnvio] = useState(false);
     
-    const API_URL = 'https://cunaalada-kitw.onrender.com';
+    // ❌ BORRAMOS la línea de API_URL local porque ya la importamos arriba
 
     useEffect(() => {
         if (!token) return;
-        axios.get(`${API_URL}/api/adopcion/${token}`)
+        // 2. Usamos API_URL y quitamos el "/api" extra del medio
+        axios.get(`${API_URL}/adopcion/${token}`)
             .then(res => {
                 setAve(res.data);
                 if (res.data.nombreAsignado && res.data.nombreAsignado.trim() !== "") {
@@ -40,7 +43,8 @@ export const useRegistro = (token) => {
         if (!form.nombre || !form.propietario) return;
         setCargandoEnvio(true);
         try {
-            await axios.post(`${API_URL}/api/adopcion/${token}/confirmar`, {
+            // 3. También aquí usamos API_URL sin el "/api" repetido
+            await axios.post(`${API_URL}/adopcion/${token}/confirmar`, {
                 nombreAdoptivo: form.nombre,
                 propietario: form.propietario
             });
@@ -66,7 +70,9 @@ export const useRegistro = (token) => {
         if (path.startsWith('http') || path.startsWith('data:')) return path;
         let rutaLimpia = path.replace(/\\/g, '/');
         if (rutaLimpia.startsWith('/')) rutaLimpia = rutaLimpia.substring(1);
-        return `${API_URL}/${rutaLimpia}`;
+        
+        // 4. Para las imágenes usamos BASE_URL (la que no tiene /api)
+        return `${BASE_URL}/${rutaLimpia}`;
     };
 
     return { 

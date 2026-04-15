@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Sparkles, ArrowRight, ShoppingBag, Zap, ShieldCheck, Heart } from 'lucide-react';
 import JaulaInteractiva from '../components/JaulaInteractiva';
+// 1. Importamos la URL dinámica
+import { API_URL } from '../config/api'; 
 
 const Inicio = () => {
     const [avesJuego, setAvesJuego] = useState([]);
@@ -10,7 +12,8 @@ const Inicio = () => {
     useEffect(() => {
         const fetchAves = async () => {
             try {
-                const res = await axios.get('https://cunaalada-kitw.onrender.com/api/aves');
+                // 2. Cambiamos la URL de Render por la variable API_URL
+                const res = await axios.get(`${API_URL}/aves`);
                 setAvesJuego(res.data);
             } catch (error) {
                 console.error("Error cargando aves para el juego", error);
@@ -21,6 +24,7 @@ const Inicio = () => {
 
     return (
         <div className="flex flex-col">
+            {/* ... todo el resto de tu código de diseño se queda igual ... */}
             <div className="relative min-h-[90vh] flex items-center overflow-hidden">
                 <div className="bg-orb top-[-200px] right-[-100px] bg-emerald-200" />
                 <div className="bg-orb bottom-[-200px] left-[-100px] bg-blue-100" style={{ animationDelay: '-5s' }} />

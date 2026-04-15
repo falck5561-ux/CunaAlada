@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { API_URL, BASE_URL } from '../config/api';
 
 export const useAveCard = (ave) => {
   const [eclosionado, setEclosionado] = useState(false);
@@ -26,20 +27,21 @@ export const useAveCard = (ave) => {
     bordeOferta: esOferta ? "border-2 border-red-500 shadow-xl shadow-red-100" : ""
   };
 
-  // Lógica de Imagen Segura
   useEffect(() => {
-    if (ave?.fotoUrl) {
-      if (ave.fotoUrl.startsWith('/uploads')) {
-        setImgSrc(`https://cunaalada-kitw.onrender.com${ave.fotoUrl}`);
-      } else {
-        setImgSrc(ave.fotoUrl);
-      }
-    } else if (ave?.foto) { 
-         setImgSrc(`https://cunaalada-kitw.onrender.com${ave.foto}`);
+  if (ave?.fotoUrl) {
+    if (ave.fotoUrl.startsWith('/uploads')) {
+      // ✅ Cambiamos la URL de Render por la variable BASE_URL
+      setImgSrc(`${BASE_URL}${ave.fotoUrl}`);
     } else {
-      setImgSrc("/portada.png"); 
+      setImgSrc(ave.fotoUrl);
     }
-  }, [ave]);
+  } else if (ave?.foto) { 
+      // ✅ Aquí también
+      setImgSrc(`${BASE_URL}${ave.foto}`);
+  } else {
+    setImgSrc("/portada.png"); 
+  }
+}, [ave, BASE_URL]);
 
   // Lógica de Interacción (Linterna en el huevo)
   const updateMask = (clientX, clientY) => {

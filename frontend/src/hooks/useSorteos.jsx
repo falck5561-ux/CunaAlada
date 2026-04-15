@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+// 1. Importamos la URL dinámica
+import { API_URL } from '../config/api'; 
 
 export const useSorteos = () => {
     const [sorteos, setSorteos] = useState([]);
@@ -9,15 +11,18 @@ export const useSorteos = () => {
     const [datosCliente, setDatosCliente] = useState({ nombre: '', email: '', telefono: '' });
     const [mensajeExito, setMensajeExito] = useState(null);
 
-    // MOCK DEL USUARIO LOGUEADO
+    // MOCK DEL USUARIO LOGUEADO (Podrías luego sacarlo de tu useLogin)
     const emailUsuarioActual = "josueponcearch@gmail.com"; 
 
     const cargarSorteos = async () => {
         try {
-            const res = await axios.get('https://cunaalada-kitw.onrender.com/api/sorteos');
+            // 2. Usamos la variable y quitamos la URL fija de Render
+            const res = await axios.get(`${API_URL}/sorteos`);
+            
             if (res.data && res.data.length > 0) {
                 setSorteos(res.data);
             } else {
+                // Datos de prueba si la base está vacía
                 setSorteos([{
                     _id: 'demo-1',
                     premio: 'Agapornis Fisher - Mutación Arlequín Azul',
@@ -38,6 +43,7 @@ export const useSorteos = () => {
 
     useEffect(() => {
         cargarSorteos();
+        // El intervalo seguirá funcionando perfecto con la nueva URL
         const interval = setInterval(cargarSorteos, 10000); 
         return () => clearInterval(interval);
     }, []);

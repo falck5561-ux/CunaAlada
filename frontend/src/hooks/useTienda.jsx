@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
+// 1. Importamos la URL dinámica
+import { API_URL } from '../config/api'; 
 
 export const useTienda = () => {
   const [productos, setProductos] = useState([]);
@@ -38,9 +40,12 @@ export const useTienda = () => {
   const obtenerProductos = async () => {
     setCargando(true);
     try {
-      const res = await axios.get('https://cunaalada-kitw.onrender.com/api/productos');
+      // 2. Cambiamos la URL fija por la variable API_URL
+      // Nota: Quitamos el "/api" porque ya viene en la variable
+      const res = await axios.get(`${API_URL}/productos`);
       setProductos(res.data);
     } catch (err) { 
+      console.error("Error en Tienda:", err);
       setError('Error de conexión'); 
     } finally { 
       setCargando(false); 
@@ -52,15 +57,14 @@ export const useTienda = () => {
     setTimeout(() => setNotificacion(null), 3000);
   };
 
+  // ... (El resto de la lógica de carrito y WhatsApp se queda igual)
   const modificarCantidad = (id, delta) => {
     setCarrito(prev => {
       const itemActual = prev.find(p => p._id === id);
-      
       if (itemActual && delta > 0 && itemActual.cantidad >= itemActual.stock) {
         mostrarNotificacion(`¡Solo quedan ${itemActual.stock} unidades!`, 'error');
         return prev; 
       }
-
       return prev.map(item => {
         if (item._id === id) {
           const nuevaCantidad = Math.max(0, item.cantidad + delta);
