@@ -1,63 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { 
-  Play, Heart, AlertTriangle, CheckCircle2, Utensils, 
-  Stethoscope, Sparkles, ChevronRight, ShieldCheck, 
-  X, Zap, Thermometer, Brain, Home, Moon, Sun, 
-  Activity, ArrowRight, Salad, Scale
+  Play, Heart, AlertTriangle, CheckCircle2, 
+  Sparkles, ChevronRight, X, Zap, Activity, ArrowRight 
 } from 'lucide-react';
 
-// --- DATA: BASE DE CONOCIMIENTO EXPANDIDA ---
-const INFO_TABS = {
-  PELIGROS: {
-    id: 'peligros', label: 'Seguridad Vital', icon: ShieldCheck, color: 'bg-rose-500',
-    content: [
-      { title: "El Asesino Silencioso: Teflón", desc: "Sartenes y planchas antiadherentes sobrecalentadas liberan gases inodoros que matan al ave en minutos.", severity: "CRITICO" },
-      { title: "Metales Pesados", desc: "Zinc y Plomo en cascabeles baratos, bisutería o jaulas oxidadas. Causan fallo neurológico.", severity: "ALTO" },
-      { title: "Aguacate", desc: "Contiene persina, una toxina cardíaca letal para psitácidas. Jamás ofrecer ni un trozo.", severity: "LETAL" },
-      { title: "Vapores Tóxicos", desc: "Aerosoles, perfumes, velas aromáticas, humo de tabaco e inciensos. Sus pulmones son hipersensibles.", severity: "ALTO" },
-      { title: "Plantas Comunes", desc: "Adelfa, Lirio, Dieffenbachia y Potos son venenosas si las pican.", severity: "MEDIO" },
-      { title: "Nidos de Tela", desc: "Las fibras se deshilachan y se enredan en patas (amputación) o buche (impactación).", severity: "ALTO" },
-    ]
-  },
-  DIETA: {
-    id: 'dieta', label: 'Nutrición Pro', icon: Utensils, color: 'bg-emerald-500',
-    stats: [
-      { label: "Pienso Extrusionado", val: "45%", desc: "Base de la dieta (Nutribird, Psittacus)" },
-      { label: "Frescos Diarios", val: "40%", desc: "Verduras de hoja, pimiento, brocoli" },
-      { label: "Semillas", val: "10%", desc: "Solo como premio o complemento" },
-      { label: "Fruta", val: "5%", desc: "Por su alto contenido en azúcar" }
-    ],
-    list: ["Pimiento Rojo/Verde", "Espinacas", "Zanahoria", "Calabacín", "Brócoli", "Manzana (sin pepas)", "Huevo duro (con cáscara)"]
-  },
-  HABITAT: {
-    id: 'habitat', label: 'Jaula y Sueño', icon: Home, color: 'bg-indigo-500',
-    tips: [
-      { t: "La Regla del Vuelo", d: "La jaula debe ser más ancha que alta. Mínimo 60cm de largo para que puedan aletear." },
-      { t: "12 Horas de Oscuridad", d: "Necesitan dormir 12h en oscuridad total y silencio para no tener problemas hormonales." },
-      { t: "Perchas Naturales", d: "Usa ramas de árboles frutales de diferentes grosores. El plástico causa pododermatitis." },
-      { t: "Ubicación", d: "Sala social, pegada a una pared (seguridad), lejos de cocina y corrientes de aire." }
-    ]
-  },
-  LENGUAJE: {
-    id: 'lenguaje', label: 'Diccionario Ave', icon: Brain, color: 'bg-amber-500',
-    actions: [
-      { act: "Rechinar el pico", mean: "Estoy relajado y listo para dormir.", type: "good" },
-      { act: "Regurgitar comida", mean: "Te quiero alimentar (Vínculo máximo).", type: "love" },
-      { act: "Alas abiertas (Corazón)", mean: "Territorialidad o mucho calor.", type: "warn" },
-      { act: "Pupilas contrayéndose", mean: "Excitación extrema o agresividad inminente.", type: "warn" },
-      { act: "Esponjarse", mean: "Si es breve: relax. Si es constante: enfermedad.", type: "alert" }
-    ]
-  }
-};
-
-const VIDEOS = [
-  { id: 1, title: "Guía Definitiva de Alimentación", yt: "CO7orv0PCjw", dur: "12:45", tag: "Esencial" },
-  { id: 2, title: "Errores de Principiante", yt: "AP1xhrlhSbU", dur: "15:20", tag: "Crítico" },
-  { id: 3, title: "Adiestramiento Básico", yt: "cJwKwo95qR0", dur: "10:12", tag: "Trucos" },
-  { id: 4, title: "Lenguaje Corporal", yt: "qqPfrgDM7qY", dur: "14:05", tag: "Conducta" }
-];
+// Importamos los datos separados y el modal
+import { INFO_TABS, VIDEOS } from '../data/cuidadosData';
+import VideoModal from '../components/VideoModal';
 
 const Cuidados = () => {
   const navigate = useNavigate();
@@ -96,11 +47,7 @@ const Cuidados = () => {
       <div className="container mx-auto px-4 -mt-32 relative z-20">
         
         {/* --- SECCIÓN DE VIDEOS --- */}
-        <motion.div 
-          initial={{ opacity: 0, y: 40 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          className="bg-white/80 backdrop-blur-xl rounded-[40px] p-8 md:p-12 shadow-2xl border border-white/40 mb-20"
-        >
+        <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} className="bg-white/80 backdrop-blur-xl rounded-[40px] p-8 md:p-12 shadow-2xl border border-white/40 mb-20">
           <div className="flex items-center gap-4 mb-10">
             <div className="p-3 bg-emerald-100 text-emerald-600 rounded-2xl"><Play size={24} fill="currentColor"/></div>
             <h2 className="text-3xl font-black text-slate-800 tracking-tight">Videoteca Esencial</h2>
@@ -115,7 +62,7 @@ const Cuidados = () => {
                 onClick={() => setVideoModal(video)}
               >
                 <div className="relative aspect-video overflow-hidden">
-                  <img src={`https://img.youtube.com/vi/${video.yt}/hqdefault.jpg`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <img src={`https://img.youtube.com/vi/${video.yt}/hqdefault.jpg`} alt={video.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center group-hover:scale-125 transition-transform">
                       <Play fill="white" className="text-white ml-1" size={20} />
@@ -137,7 +84,7 @@ const Cuidados = () => {
         {/* --- PANEL DE INFORMACIÓN INTERACTIVA (BENTO GRID) --- */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-32">
           
-          {/* SIDEBAR DE NAVEGACIÓN (Responsivo: Horizontal en móvil, Vertical en Desktop) */}
+          {/* SIDEBAR DE NAVEGACIÓN */}
           <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 lg:sticky lg:top-10 h-min z-20 snap-x">
             <LayoutGroup>
               {Object.values(INFO_TABS).map((tab) => {
@@ -171,13 +118,12 @@ const Cuidados = () => {
                 transition={{ duration: 0.3 }}
                 className="bg-white rounded-[50px] p-8 md:p-12 shadow-2xl border border-slate-100 min-h-[600px]"
               >
-                {/* --- RENDERIZADO CONDICIONAL POR TAB --- */}
-
+                
                 {/* 1. PELIGROS */}
                 {activeTab === 'peligros' && (
                   <div className="space-y-8">
                     <div className="flex items-center gap-4 mb-8">
-                       <div className="w-16 h-16 rounded-3xl bg-rose-100 text-rose-600 flex items-center justify-center"><ShieldCheck size={32}/></div>
+                       <div className="w-16 h-16 rounded-3xl bg-rose-100 text-rose-600 flex items-center justify-center"><INFO_TABS.PELIGROS.icon size={32}/></div>
                        <div>
                          <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Amenazas Ocultas</h3>
                          <p className="text-slate-500">Lo que para ti es normal, para ellos es veneno.</p>
@@ -202,14 +148,12 @@ const Cuidados = () => {
                 {activeTab === 'dieta' && (
                   <div>
                     <div className="flex items-center gap-4 mb-10">
-                       <div className="w-16 h-16 rounded-3xl bg-emerald-100 text-emerald-600 flex items-center justify-center"><Salad size={32}/></div>
+                       <div className="w-16 h-16 rounded-3xl bg-emerald-100 text-emerald-600 flex items-center justify-center"><INFO_TABS.DIETA.icon size={32}/></div>
                        <div>
                          <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Ingeniería Nutricional</h3>
                          <p className="text-slate-500">Olvídate de "solo semillas". Eso es comida chatarra.</p>
                        </div>
                     </div>
-
-                    {/* Gráfico de distribución (Responsivo con scroll horizontal en móviles) */}
                     <div className="flex md:grid md:grid-cols-4 gap-4 mb-12 overflow-x-auto pb-4 snap-x">
                       {INFO_TABS.DIETA.stats.map((stat, i) => (
                          <div key={i} className="min-w-[220px] md:min-w-0 flex-shrink-0 bg-slate-50 p-6 rounded-[30px] text-center border border-slate-100 relative overflow-hidden snap-center">
@@ -220,7 +164,6 @@ const Cuidados = () => {
                          </div>
                       ))}
                     </div>
-
                     <div className="bg-emerald-50/50 rounded-[35px] p-8 border border-emerald-100">
                       <h5 className="font-black text-emerald-800 uppercase tracking-widest mb-6 flex items-center gap-2"><CheckCircle2 size={18}/> Lista de Compras Segura</h5>
                       <div className="flex flex-wrap gap-3">
@@ -236,7 +179,7 @@ const Cuidados = () => {
                 {activeTab === 'habitat' && (
                   <div>
                      <div className="flex items-center gap-4 mb-10">
-                       <div className="w-16 h-16 rounded-3xl bg-indigo-100 text-indigo-600 flex items-center justify-center"><Home size={32}/></div>
+                       <div className="w-16 h-16 rounded-3xl bg-indigo-100 text-indigo-600 flex items-center justify-center"><INFO_TABS.HABITAT.icon size={32}/></div>
                        <div>
                          <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">El Hogar Perfecto</h3>
                          <p className="text-slate-500">Jaula no es cárcel, es su habitación segura.</p>
@@ -260,7 +203,7 @@ const Cuidados = () => {
                 {activeTab === 'lenguaje' && (
                   <div>
                     <div className="flex items-center gap-4 mb-10">
-                       <div className="w-16 h-16 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center"><Brain size={32}/></div>
+                       <div className="w-16 h-16 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center"><INFO_TABS.LENGUAJE.icon size={32}/></div>
                        <div>
                          <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Traductor Ave-Humano</h3>
                          <p className="text-slate-500">Aprende a escuchar lo que dicen sin palabras.</p>
@@ -289,7 +232,7 @@ const Cuidados = () => {
           </div>
         </div>
 
-        {/* --- MITOS SECTION (FLIP CARDS) --- */}
+        {/* --- MITOS SECTION --- */}
         <section className="mb-32">
            <div className="text-center mb-16">
               <span className="text-emerald-500 font-bold uppercase tracking-[0.3em] text-xs">Cultura General</span>
@@ -328,26 +271,9 @@ const Cuidados = () => {
 
       </div>
 
-      {/* --- MODAL VIDEO --- */}
-      <AnimatePresence>
-        {videoModal && (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md"
-            onClick={() => setVideoModal(null)}
-          >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-5xl aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl relative"
-            >
-              <button className="absolute top-4 right-4 z-10 bg-white/20 hover:bg-white text-white hover:text-black p-2 rounded-full transition-all" onClick={() => setVideoModal(null)}>
-                <X size={24} />
-              </button>
-              <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${videoModal.yt}?autoplay=1`} allow="autoplay; encrypted-media" allowFullScreen title="video" />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Renderizamos el Componente del Modal de Video */}
+      <VideoModal videoModal={videoModal} setVideoModal={setVideoModal} />
+
     </div>
   );
 };

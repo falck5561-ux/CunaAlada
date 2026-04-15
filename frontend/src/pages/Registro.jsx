@@ -1,73 +1,27 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import confetti from 'canvas-confetti';
 import html2canvas from 'html2canvas';
 import QRCode from "react-qr-code";
-import { PenLine, Download, ShieldCheck, Star, Check, Bird, Feather } from 'lucide-react';
+import { PenLine, Download, ShieldCheck, Star, Bird, Feather } from 'lucide-react';
 
-const API_URL = 'https://cunaalada-kitw.onrender.com';
-
-/* --- ESTILOS MEJORADOS Y COMPATIBLES CON CAPTURA --- */
-const EstilosCertificado = () => (
-  <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=Pinyon+Script&family=Montserrat:wght@300;400;500;600&display=swap');
-
-    .font-imperial { font-family: 'Cinzel', serif; }
-    .font-hand { font-family: 'Pinyon Script', cursive; }
-    .font-modern { font-family: 'Montserrat', sans-serif; }
-
-    .bg-paper-texture {
-      background-color: #FFFCF5;
-      background-image: 
-        linear-gradient(to right, rgba(212, 175, 55, 0.05) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(212, 175, 55, 0.05) 1px, transparent 1px),
-        url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
-        background-size: 40px 40px, 40px 40px, auto;
-    }
-
-    @keyframes shine {
-      0% { transform: translateX(-100%) skewX(-15deg); }
-      100% { transform: translateX(200%) skewX(-15deg); }
-    }
-    .group:hover .shine-effect {
-      animation: shine 1.5s infinite linear;
-    }
-  `}</style>
-);
+// Importamos nuestra lógica
+import { useRegistro } from '../hooks/useRegistro';
 
 const Registro = () => {
   const { token } = useParams();
-  const [ave, setAve] = useState(null);
-  const [form, setForm] = useState({ nombre: '', propietario: '' });
-  const [paso, setPaso] = useState(1);
-  const [cargandoEnvio, setCargandoEnvio] = useState(false);
+  
+  // Extraemos todo lo que necesitamos del Custom Hook
+  const { 
+    ave, form, setForm, paso, cargandoEnvio, 
+    confirmarRegistro, formatearFecha, obtenerUrlImagen 
+  } = useRegistro(token);
+
   const [descargando, setDescargando] = useState(false);
   const certificadoRef = useRef(null);
 
   const urlValidacion = `https://cunaalada.com/validar/${token}`; 
   const folioUnico = token ? token.substring(0, 8).toUpperCase() : "0000";
-
-  const obtenerUrlImagen = (path) => {
-    if (!path) return null;
-    if (path.startsWith('http') || path.startsWith('data:')) return path;
-    let rutaLimpia = path.replace(/\\/g, '/');
-    if (rutaLimpia.startsWith('/')) rutaLimpia = rutaLimpia.substring(1);
-    return `${API_URL}/${rutaLimpia}`;
-  };
-
-  useEffect(() => {
-    axios.get(`${API_URL}/api/adopcion/${token}`)
-      .then(res => {
-        setAve(res.data);
-        if (res.data.nombreAsignado && res.data.nombreAsignado.trim() !== "") {
-           setForm({ nombre: res.data.nombreAsignado, propietario: res.data.propietario });
-           setPaso(2); 
-        }
-      })
-      .catch(err => console.error(err));
-  }, [token]);
 
   // --- EFECTO PARA AUTODESCARGA ---
   useEffect(() => {
@@ -78,37 +32,6 @@ const Registro = () => {
         return () => clearTimeout(timer);
     }
   }, [paso]);
-
-  const confirmarRegistro = async (e) => {
-    e.preventDefault();
-    if (!form.nombre || !form.propietario) return;
-    setCargandoEnvio(true);
-    try {
-        await axios.post(`${API_URL}/api/adopcion/${token}/confirmar`, {
-            nombreAdoptivo: form.nombre,
-            propietario: form.propietario
-        });
-        setPaso(2);
-        setTimeout(lanzarConfetiExclusivo, 500);
-    } catch (error) {
-        console.error("Error", error);
-        alert("Error de conexión");
-    } finally {
-        setCargandoEnvio(false);
-    }
-  };
-
-  const lanzarConfetiExclusivo = () => {
-    var duration = 3 * 1000;
-    var animationEnd = Date.now() + duration;
-    var defaults = { startVelocity: 30, spread: 360, ticks: 100, zIndex: 100 };
-    var interval = setInterval(function() {
-      var timeLeft = animationEnd - Date.now();
-      if (timeLeft <= 0) return clearInterval(interval);
-      var particleCount = 50 * (timeLeft / duration);
-      confetti({ ...defaults, particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 }, colors: ['#D4AF37', '#F5F5F5', '#E5E4E2'] });
-    }, 250);
-  };
 
   const descargarImagen = async () => {
     if (certificadoRef.current && !descargando) {
@@ -140,13 +63,6 @@ const Registro = () => {
     }
   };
 
-  const formatearFechaSegura = (fecha) => {
-      try {
-          if (!fecha) return "Fecha Pendiente";
-          return <span>{new Date(fecha).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}</span>;
-      } catch (e) { return "Fecha Pendiente"; }
-  };
-
   if (!ave) return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center">
        <div className="w-12 h-12 border-4 border-yellow-600 border-t-transparent rounded-full animate-spin"></div>
@@ -155,7 +71,6 @@ const Registro = () => {
 
   return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 relative overflow-hidden font-modern selection:bg-yellow-500/30 selection:text-yellow-200" translate="no">
-      <EstilosCertificado />
       
       <div className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(184,134,11,0.08),rgba(0,0,0,1))]"></div>
@@ -246,7 +161,6 @@ const Registro = () => {
                                 {/* --- CORRECCIÓN DEL ANILLO --- */}
                                 <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-20 shadow-md">
                                     <div className="bg-[#1a1a1a] text-[#F0E68C] px-6 py-1.5 rounded-[2px] text-[10px] font-bold tracking-[0.25em] border border-[#D4AF37] font-modern uppercase flex items-center justify-center gap-2">
-                                        {/* Alineación forzada para los puntos */}
                                         <span className="opacity-80 mt-[1px]">•</span> 
                                         <span>{ave.anillo || "S/N"}</span> 
                                         <span className="opacity-80 mt-[1px]">•</span>
@@ -258,7 +172,9 @@ const Registro = () => {
                                 <div>
                                     <p className="font-imperial text-[9px] text-[#8B4513]/80 italic mb-1">Se otorga el presente a</p>
                                     <h2 className="font-imperial text-4xl text-[#3d231a] leading-tight capitalize drop-shadow-sm">{form.nombre}</h2>
-                                    <p className="font-modern text-[7px] text-[#8B4513]/60 mt-1 uppercase tracking-widest font-semibold">Nacido el: {formatearFechaSegura(ave.fechaNacimiento)}</p>
+                                    <p className="font-modern text-[7px] text-[#8B4513]/60 mt-1 uppercase tracking-widest font-semibold">
+                                      Nacido el: <span>{formatearFecha(ave.fechaNacimiento)}</span>
+                                    </p>
                                 </div>
                                 
                                 <div className="flex items-center justify-center gap-3 opacity-30 my-2">
@@ -291,9 +207,7 @@ const Registro = () => {
                                     </div>
                                 </div>
                                 
-                                {/* --- CORRECCIÓN DEL ICONO (LOGO) --- */}
                                 <div className="relative pr-1 flex flex-col items-end opacity-90">
-                                    {/* h-16 w-auto permite que la imagen tome su ancho natural sin estirarse */}
                                     <img src="/icono.png" alt="Logo" className="h-16 w-auto object-contain filter sepia contrast-125 drop-shadow-sm" />
                                     <p className="text-[6px] text-[#8B4513] font-modern mt-1 tracking-wider uppercase">Campeche, MX</p>
                                 </div>
@@ -334,4 +248,5 @@ const Registro = () => {
     </div>
   );
 };
+
 export default Registro;
