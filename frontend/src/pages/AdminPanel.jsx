@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { API_URL } from '../config/api'; // Asegúrate de tener este archivo o reemplázalo con tu string
+import { API_URL } from '../config/api'; 
 
-// Importación de componentes refactorizados
 import Sidebar from '../components/admin/Sidebar';
 import StatHeader from '../components/admin/StatHeader';
 import Toast from '../components/admin/Toast';
@@ -11,7 +10,7 @@ import AdminTable from '../components/admin/AdminTable';
 import DeleteModal from '../components/admin/modals/DeleteModal';
 import ParticipantsModal from '../components/admin/modals/ParticipantsModal';
 
-const AdminPanel = ({ cerrarSesion }) => {
+const AdminPanel = ({ cerrarSesion, usuario, user }) => {
   const [seccion, setSeccion] = useState('aves');
   const [lista, setLista] = useState([]);
   const [listaAvesDisponibles, setListaAvesDisponibles] = useState([]);
@@ -249,6 +248,7 @@ const AdminPanel = ({ cerrarSesion }) => {
         setSeccion={setSeccion} 
         cerrarSesion={cerrarSesion} 
         theme={theme} 
+        usuario={usuario || user} 
       />
 
       {/* Contenido Principal */}
@@ -259,6 +259,7 @@ const AdminPanel = ({ cerrarSesion }) => {
           busqueda={busqueda} 
           setBusqueda={setBusqueda} 
           theme={theme} 
+          usuario={usuario || user} 
         />
 
         <div className="flex-1 overflow-auto p-10">

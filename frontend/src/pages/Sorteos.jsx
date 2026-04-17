@@ -4,8 +4,9 @@ import { Ticket, Trophy, CreditCard, Sparkles, ShieldCheck, Clock, ArrowRight, X
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-// Importamos nuestra lógica separada
+// Importamos la lógica del hook y la URL dinámica de la API
 import { useSorteos } from '../hooks/useSorteos';
+import { API_URL } from '../config/api'; 
 
 // --- INICIALIZACIÓN DE STRIPE ---
 const stripePromise = loadStripe('pk_test_51SFnF0ROWvZ0m785J38J20subms9zeVw92xxsdct2OVzHbIXF8Kueajcp4jxJblwBhozD1xDljC2UG1qDNOGOxTX00UiDpoLCI');
@@ -29,7 +30,8 @@ const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSucce
         setErrorStripe(null);
 
         try {
-            const resPago = await axios.post('https://cunaalada-kitw.onrender.com/api/sorteos/crear-pago', {
+            // USAMOS API_URL PARA EL PAGO
+            const resPago = await axios.post(`${API_URL}/sorteos/crear-pago`, {
                 sorteoId: sorteo._id,
                 cantidad: numerosSeleccionados.length,
                 numerosElegidos: numerosSeleccionados 
@@ -49,9 +51,13 @@ const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSucce
                 setProcesandoPago(false);
             } else {
                 if (result.paymentIntent.status === 'succeeded') {
-                    await axios.post(`https://cunaalada-kitw.onrender.com/api/sorteos/${sorteo._id}/confirmar-compra`, {
-                        nombre: datos.nombre, email: datos.email, telefono: datos.telefono,
-                        numerosBoletos: numerosSeleccionados, idPago: result.paymentIntent.id
+                    // USAMOS API_URL PARA CONFIRMAR LA COMPRA
+                    await axios.post(`${API_URL}/sorteos/${sorteo._id}/confirmar-compra`, {
+                        nombre: datos.nombre, 
+                        email: datos.email, 
+                        telefono: datos.telefono,
+                        numerosBoletos: numerosSeleccionados, 
+                        idPago: result.paymentIntent.id
                     });
                     onSuccess(numerosSeleccionados); 
                 }
@@ -125,7 +131,6 @@ const FormularioPago = ({ sorteo, numerosSeleccionados, datos, setDatos, onSucce
 // COMPONENTE PRINCIPAL: VISTA DE SORTEOS
 // ============================================================================
 const Sorteos = () => {
-    // Usamos nuestro Custom Hook
     const { 
         sorteos, loading, modalCompra, setModalCompra,
         numerosSeleccionados, datosCliente, setDatosCliente,
@@ -296,7 +301,8 @@ const Sorteos = () => {
 
                                 <div className="w-full lg:w-5/12 relative rounded-[32px] overflow-hidden aspect-square lg:aspect-auto lg:h-[450px] shadow-inner bg-slate-100 flex items-center justify-center">
                                     <img 
-                                        src={sorteo.fotoUrl && !sorteo.fotoUrl.startsWith('http') ? `https://cunaalada-kitw.onrender.com${sorteo.fotoUrl}` : (sorteo.fotoUrl || '/portada.png')} 
+                                        // USAMOS API_URL PARA LAS IMÁGENES LOCALES
+                                        src={sorteo.fotoUrl && !sorteo.fotoUrl.startsWith('http') ? `${API_URL}${sorteo.fotoUrl}` : (sorteo.fotoUrl || '/portada.png')} 
                                         alt={sorteo.premio} 
                                         className="w-full h-full object-cover relative z-10 transition-transform duration-1000 group-hover:scale-110" 
                                         onError={(e) => { e.target.onerror = null; e.target.src = '/portada.png'; }}
