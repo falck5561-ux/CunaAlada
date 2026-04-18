@@ -1,7 +1,7 @@
 import React from 'react';
 import { Edit2, Plus, X, Upload, Image as ImageIcon, Bird, Dna, Hash, Check, Save } from 'lucide-react';
 
-const AdminForm = ({ 
+const FormularioAdmin = ({ 
   seccion, modoEdicion, theme, 
   formAve, formProd, formSorteo, 
   handleChangeAve, handleChangeProd, handleChangeSorteo, 
@@ -209,4 +209,4 @@ const AdminForm = ({
   );
 };
 
-export default AdminForm;
+export default FormularioAdmin;

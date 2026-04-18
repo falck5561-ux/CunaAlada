@@ -1,8 +1,8 @@
 import React from 'react';
-import { API_URL } from '../../config/api'; // Ajustar ruta
+import { API_URL } from '../../config/api'; 
 import { CheckCircle, Archive, AlertCircle, Bird, Tag, User, Hash, Users, Trophy, Copy, Edit2, Trash2 } from 'lucide-react';
 
-const AdminTable = ({ 
+const TablaAdmin = ({ 
   seccion, listaFiltrada, 
   filtroEstado, setFiltroEstado, theme,
   prepararEdicion, abrirModalEliminar, setModalParticipantes, 
@@ -229,4 +229,4 @@ const AdminTable = ({
   );
 };
 
-export default AdminTable;
+export default TablaAdmin;

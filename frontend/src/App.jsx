@@ -4,12 +4,13 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-do
 // Importación de Páginas
 import InicioSesion from './pages/InicioSesion';
 import Tienda from './pages/Tienda';
-import AdminPanel from './pages/AdminPanel';
+import PanelAdmin from './pages/PanelAdmin';
 import Aves from './pages/Aves';
 import Cuidados from './pages/Cuidados';
 import Registro from './pages/Registro';
 import Sorteos from './pages/Sorteos';
 import Inicio from './pages/Inicio'; 
+import NidoRiesgo from './pages/NidoRiesgo'; 
 
 // Importación de Componentes
 import BotonWhatsApp from './components/BotonWhatsApp';
@@ -17,7 +18,7 @@ import BotonWhatsApp from './components/BotonWhatsApp';
 // Iconos
 import { 
   Bird, ShoppingBag, Home, Menu, X, ShieldCheck, BookOpen,
-  Heart, Instagram, Facebook, Ticket, LogOut, User
+  Heart, Instagram, Facebook, Ticket, LogOut, User, Activity 
 } from 'lucide-react';
 
 // ============================================================================
@@ -38,6 +39,7 @@ const MenuNavegacion = ({ usuario, cerrarSesion, menuMovilAbierto, setMenuMovilA
     { to: "/aves", label: "Ejemplares", icon: <Bird size={18}/> },
     { to: "/tienda", label: "Tienda", icon: <ShoppingBag size={18}/> },
     { to: "/sorteos", label: "Sorteos", icon: <Ticket size={18}/> },
+    { to: "/nido-riesgo", label: "Nido del Riesgo", icon: <Activity size={18}/> }, // <-- Nuevo enlace en el menú
     { to: "/cuidados", label: "Academia", icon: <BookOpen size={18}/> }
   ];
 
@@ -92,7 +94,7 @@ const MenuNavegacion = ({ usuario, cerrarSesion, menuMovilAbierto, setMenuMovilA
         </div>
       </nav>
 
-      {/* MENU MÓVIL (SIDEBAR) */}
+      {/* MENU MÓVIL (BarraLateral) */}
       <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[105] transition-opacity duration-300 lg:hidden ${menuMovilAbierto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setMenuMovilAbierto(false)} />
       
       <div className={`fixed top-0 right-0 h-full w-[85%] max-w-sm glass-dark z-[110] transform transition-transform duration-500 ease-out lg:hidden shadow-2xl flex flex-col p-8 justify-between ${menuMovilAbierto ? 'translate-x-0' : 'translate-x-full'}`}>
@@ -236,7 +238,8 @@ const AppContent = () => {
           <Route path="/cuidados" element={<Cuidados />} />
           <Route path="/registro/:token" element={<Registro />} />
           <Route path="/sorteos" element={<Sorteos />} />
-          <Route path="/admin" element={autorizado ? <AdminPanel cerrarSesion={cerrarSesion} /> : <InicioSesion setAutorizado={setAutorizado} />} />
+          <Route path="/nido-riesgo" element={<NidoRiesgo />} /> {/* <-- Ruta lista */}
+          <Route path="/admin" element={autorizado ? <PanelAdmin cerrarSesion={cerrarSesion} /> : <InicioSesion setAutorizado={setAutorizado} />} />
         </Routes>
       </main>
 

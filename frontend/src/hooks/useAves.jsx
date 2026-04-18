@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-// 1. Importamos la URL mágica que configuramos
 import { API_URL } from '../config/api'; 
 
 export const useAves = () => {

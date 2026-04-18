@@ -1,7 +1,7 @@
 import React from 'react';
 import { LayoutDashboard, Bird, Package, Ticket, ChevronRight, LogOut } from 'lucide-react';
 
-const Sidebar = ({ seccion, setSeccion, cerrarSesion, theme }) => {
+const BarraLateral = ({ seccion, setSeccion, cerrarSesion, theme }) => {
   return (
     <aside className="w-72 bg-slate-900 text-white flex flex-col shadow-2xl z-20">
       <div className="p-8 flex items-center gap-4 border-b border-slate-800/50">
@@ -59,4 +59,4 @@ const Sidebar = ({ seccion, setSeccion, cerrarSesion, theme }) => {
   );
 };
 
-export default Sidebar;
+export default BarraLateral;

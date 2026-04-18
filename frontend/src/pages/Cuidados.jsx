@@ -8,7 +8,7 @@ import {
 
 // Importamos los datos separados y el modal
 import { INFO_TABS, VIDEOS } from '../data/cuidadosData';
-import VideoModal from '../components/VideoModal';
+import VideoModal from '../components/VentanaVideo';
 
 const Cuidados = () => {
   const navigate = useNavigate();
@@ -84,7 +84,7 @@ const Cuidados = () => {
         {/* --- PANEL DE INFORMACIÓN INTERACTIVA (BENTO GRID) --- */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-32">
           
-          {/* SIDEBAR DE NAVEGACIÓN */}
+          {/* BarraLateral DE NAVEGACIÓN */}
           <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 lg:sticky lg:top-10 h-min z-20 snap-x">
             <LayoutGroup>
               {Object.values(INFO_TABS).map((tab) => {

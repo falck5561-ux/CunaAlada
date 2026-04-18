@@ -24,7 +24,7 @@ const Inicio = () => {
 
     return (
         <div className="flex flex-col">
-            {/* ... todo el resto de tu código de diseño se queda igual ... */}
+            
             <div className="relative min-h-[90vh] flex items-center overflow-hidden">
                 <div className="bg-orb top-[-200px] right-[-100px] bg-emerald-200" />
                 <div className="bg-orb bottom-[-200px] left-[-100px] bg-blue-100" style={{ animationDelay: '-5s' }} />

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import confetti from 'canvas-confetti';
-// 1. Importamos las URLs inteligentes
 import { API_URL, BASE_URL } from '../config/api'; 
 
 export const useRegistro = (token) => {
@@ -10,11 +9,11 @@ export const useRegistro = (token) => {
     const [paso, setPaso] = useState(1);
     const [cargandoEnvio, setCargandoEnvio] = useState(false);
     
-    // ❌ BORRAMOS la línea de API_URL local porque ya la importamos arriba
+    
 
     useEffect(() => {
         if (!token) return;
-        // 2. Usamos API_URL y quitamos el "/api" extra del medio
+        
         axios.get(`${API_URL}/adopcion/${token}`)
             .then(res => {
                 setAve(res.data);
@@ -43,7 +42,7 @@ export const useRegistro = (token) => {
         if (!form.nombre || !form.propietario) return;
         setCargandoEnvio(true);
         try {
-            // 3. También aquí usamos API_URL sin el "/api" repetido
+            
             await axios.post(`${API_URL}/adopcion/${token}/confirmar`, {
                 nombreAdoptivo: form.nombre,
                 propietario: form.propietario

@@ -40,8 +40,6 @@ export const useTienda = () => {
   const obtenerProductos = async () => {
     setCargando(true);
     try {
-      // 2. Cambiamos la URL fija por la variable API_URL
-      // Nota: Quitamos el "/api" porque ya viene en la variable
       const res = await axios.get(`${API_URL}/productos`);
       setProductos(res.data);
     } catch (err) { 
@@ -57,7 +55,7 @@ export const useTienda = () => {
     setTimeout(() => setNotificacion(null), 3000);
   };
 
-  // ... (El resto de la lógica de carrito y WhatsApp se queda igual)
+  
   const modificarCantidad = (id, delta) => {
     setCarrito(prev => {
       const itemActual = prev.find(p => p._id === id);

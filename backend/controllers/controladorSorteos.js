@@ -5,8 +5,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 // 1. OBTENER SORTEOS (Optimizado para Tabs)
 exports.obtenerSorteos = async (req, res) => {
     try {
-        // Quitamos la restricción de una semana para que el usuario pueda navegar el histórico
-        // Pero los ordenamos por los más recientes primero
+        
         const sorteos = await Sorteo.find().populate('aveId').sort({ updatedAt: -1 });
         
         const sorteosFormateados = sorteos.map(sorteo => {
@@ -65,7 +64,7 @@ exports.revelarGanador = async (req, res) => {
     }
 };
 
-// --- LOS DEMÁS MÉTODOS SE MANTIENEN IGUAL PARA NO ROMPER TU LÓGICA DE PAGO ---
+
 exports.crearSorteo = async (req, res) => {
     try {
         const nuevoSorteo = new Sorteo(req.body);

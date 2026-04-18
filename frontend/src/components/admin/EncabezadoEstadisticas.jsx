@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search } from 'lucide-react';
 
-const StatHeader = ({ seccion, totalRegistros, busqueda, setBusqueda, theme }) => {
+const EncabezadoEstadisticas = ({ seccion, totalRegistros, busqueda, setBusqueda, theme }) => {
   return (
     <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-10 shadow-sm z-10">
       <div>
@@ -31,4 +31,4 @@ const StatHeader = ({ seccion, totalRegistros, busqueda, setBusqueda, theme }) =
   );
 };
 
-export default StatHeader;
+export default EncabezadoEstadisticas;

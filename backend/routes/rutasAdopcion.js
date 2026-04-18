@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-// Importamos las funciones que ya tienes en tu controladorAves
+
 const controladorAves = require('../controllers/controladorAves');
 
 // Cuando React haga el GET, usamos tu función obtenerAdopcion

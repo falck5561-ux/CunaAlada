@@ -7,8 +7,8 @@ import {
 // Importamos nuestra lógica
 import { useTienda } from '../hooks/useTienda';
 
-/* --- COMPONENTES UI (Toast) --- */
-const Toast = ({ mensaje, tipo }) => (
+/* --- COMPONENTES UI (Notificacion) --- */
+const Notificacion = ({ mensaje, tipo }) => (
   <div className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[120] px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-bounce-in transition-all ${
     tipo === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-500 text-white'
   }`}>
@@ -30,7 +30,7 @@ const Tienda = () => {
   return (
     <div className="min-h-screen bg-[#F8F9FA] font-sans text-slate-800 pb-20 relative">
 
-      {notificacion && <Toast mensaje={notificacion.msj} tipo={notificacion.tipo} />}
+      {notificacion && <Notificacion mensaje={notificacion.msj} tipo={notificacion.tipo} />}
 
       {/* HEADER */}
       <div className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40">

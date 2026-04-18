@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config/api'; 
 
-import Sidebar from '../components/admin/Sidebar';
-import StatHeader from '../components/admin/StatHeader';
-import Toast from '../components/admin/Toast';
-import AdminForm from '../components/admin/AdminForm';
-import AdminTable from '../components/admin/AdminTable';
+import BarraLateral from '../components/admin/BarraLateral';
+import EncabezadoEstadisticas from '../components/admin/EncabezadoEstadisticas';
+import Notificacion from '../components/admin/Notificacion';
+import FormularioAdmin from '../components/admin/FormularioAdmin';
+import TablaAdmin from '../components/admin/TablaAdmin';
 import DeleteModal from '../components/admin/modals/DeleteModal';
 import ParticipantsModal from '../components/admin/modals/ParticipantsModal';
 
-const AdminPanel = ({ cerrarSesion, usuario, user }) => {
+const PanelAdmin = ({ cerrarSesion, usuario, user }) => {
   const [seccion, setSeccion] = useState('aves');
   const [lista, setLista] = useState([]);
   const [listaAvesDisponibles, setListaAvesDisponibles] = useState([]);
@@ -35,7 +35,7 @@ const AdminPanel = ({ cerrarSesion, usuario, user }) => {
   const [formProd, setFormProd] = useState(initialProd);
   const [formSorteo, setFormSorteo] = useState(initialSorteo);
 
-  const showToast = (message, type = 'success') => {
+  const showNotificacion = (message, type = 'success') => {
     setNotificacion({ show: true, message, type });
     setTimeout(() => setNotificacion(prev => ({ ...prev, show: false })), 3000);
   };
@@ -56,7 +56,7 @@ const AdminPanel = ({ cerrarSesion, usuario, user }) => {
       }
     } catch (error) { 
       console.error("Error cargando datos:", error);
-      showToast('Error de conexión con el servidor', 'error');
+      showNotificacion('Error de conexión con el servidor', 'error');
     }
   };
 
@@ -130,16 +130,16 @@ const AdminPanel = ({ cerrarSesion, usuario, user }) => {
       const config = { headers: { 'Content-Type': 'multipart/form-data' } };
       if (modoEdicion) {
         await axios.put(`${API_URL}/${endpoint}/${idEditar}`, formData, config);
-        showToast('¡Registro actualizado correctamente!');
+        showNotificacion('¡Registro actualizado correctamente!');
       } else {
         await axios.post(`${API_URL}/${endpoint}`, formData, config);
-        showToast('¡Nuevo registro creado con éxito!');
+        showNotificacion('¡Nuevo registro creado con éxito!');
       }
       resetForms();
       cargarDatos();
     } catch (error) { 
       console.error(error);
-      showToast('Error al guardar los datos', 'error');
+      showNotificacion('Error al guardar los datos', 'error');
     }
   };
 
@@ -147,12 +147,12 @@ const AdminPanel = ({ cerrarSesion, usuario, user }) => {
     e.preventDefault();
     try {
         await axios.post(`${API_URL}/sorteos`, formSorteo);
-        showToast('¡Sorteo programado exitosamente!');
+        showNotificacion('¡Sorteo programado exitosamente!');
         resetForms();
         cargarDatos();
     } catch (error) { 
         console.error(error);
-        showToast('Error al crear el sorteo', 'error'); 
+        showNotificacion('Error al crear el sorteo', 'error'); 
     }
   };
 
@@ -160,9 +160,9 @@ const AdminPanel = ({ cerrarSesion, usuario, user }) => {
     if(!window.confirm("¿Estás seguro de elegir al ganador ahora? Esta acción no se puede deshacer y avisará a los clientes.")) return;
     try {
         await axios.post(`${API_URL}/sorteos/${id}/revelar`);
-        showToast('¡Tenemos un ganador! La magia ha ocurrido.', 'success');
+        showNotificacion('¡Tenemos un ganador! La magia ha ocurrido.', 'success');
         cargarDatos();
-    } catch (error) { showToast('Error al procesar el ganador', 'error'); }
+    } catch (error) { showNotificacion('Error al procesar el ganador', 'error'); }
   };
 
   const abrirModalEliminar = (id) => setModalEliminar({ show: true, id });
@@ -171,10 +171,10 @@ const AdminPanel = ({ cerrarSesion, usuario, user }) => {
       try {
         const endpoint = seccion === 'aves' ? 'aves' : 'productos';
         await axios.delete(`${API_URL}/${endpoint}/${modalEliminar.id}`);
-        showToast('Registro eliminado correctamente');
+        showNotificacion('Registro eliminado correctamente');
         cargarDatos();
       } catch (error) { 
-        showToast('No se pudo eliminar el registro', 'error');
+        showNotificacion('No se pudo eliminar el registro', 'error');
       } finally {
         setModalEliminar({ show: false, id: null });
       }
@@ -185,10 +185,10 @@ const AdminPanel = ({ cerrarSesion, usuario, user }) => {
         const res = await axios.post(`${API_URL}/aves/${id}/generar-link`);
         const linkFinal = res.data.link.replace('/adopcion/', '/registro/');
         navigator.clipboard.writeText(linkFinal);
-        showToast('Link copiado al portapapeles 📋');
+        showNotificacion('Link copiado al portapapeles 📋');
         cargarDatos();
     } catch (error) {
-        showToast('Error al generar el link', 'error');
+        showNotificacion('Error al generar el link', 'error');
     }
   };
 
@@ -240,10 +240,10 @@ const AdminPanel = ({ cerrarSesion, usuario, user }) => {
         theme={theme}
       />
 
-      <Toast notificacion={notificacion} />
+      <Notificacion notificacion={notificacion} />
 
-      {/* Sidebar */}
-      <Sidebar 
+      {/* BarraLateral */}
+      <BarraLateral 
         seccion={seccion} 
         setSeccion={setSeccion} 
         cerrarSesion={cerrarSesion} 
@@ -253,7 +253,7 @@ const AdminPanel = ({ cerrarSesion, usuario, user }) => {
 
       {/* Contenido Principal */}
       <main className="flex-1 flex flex-col overflow-hidden relative bg-[#F8F9FC]">
-        <StatHeader 
+        <EncabezadoEstadisticas 
           seccion={seccion} 
           totalRegistros={listaFiltrada.length} 
           busqueda={busqueda} 
@@ -266,7 +266,7 @@ const AdminPanel = ({ cerrarSesion, usuario, user }) => {
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 items-start">
             
             <div className="xl:col-span-4">
-              <AdminForm 
+              <FormularioAdmin 
                 seccion={seccion}
                 modoEdicion={modoEdicion}
                 theme={theme}
@@ -285,7 +285,7 @@ const AdminPanel = ({ cerrarSesion, usuario, user }) => {
             </div>
 
             <div className="xl:col-span-8">
-              <AdminTable 
+              <TablaAdmin 
                 seccion={seccion}
                 listaFiltrada={listaFiltrada}
                 filtroEstado={filtroEstado}
@@ -331,4 +331,4 @@ const AdminPanel = ({ cerrarSesion, usuario, user }) => {
   );
 };
 
-export default AdminPanel;
+export default PanelAdmin;

@@ -1,7 +1,6 @@
 const Ave = require('../models/Ave');
 const { v4: uuidv4 } = require('uuid');
 
-// Helper para manejar errores y verlos clarito en la terminal
 const manejarError = (res, error, mensaje) => {
     console.error(`❌ ${mensaje}:`, error.message || error);
     res.status(500).json({ 
@@ -61,8 +60,7 @@ exports.generarLinkAdopcion = async (req, res) => {
         const token = uuidv4(); 
         await Ave.findByIdAndUpdate(req.params.id, { estado: 'reservado', tokenRegistro: token });
         
-        // Usamos una variable de entorno o detectamos el origen para el link
-        // Si no existe la variable, por ahora usa localhost para tus pruebas
+        
         const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
         res.json({ success: true, link: `${CLIENT_URL}/registro/${token}` });
     } catch (error) { 

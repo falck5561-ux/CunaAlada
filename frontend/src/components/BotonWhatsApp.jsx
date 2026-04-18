@@ -1,5 +1,4 @@
 import React from 'react';
-// Usamos un icono SVG directo o de Lucide si lo tienes instalado
 import { MessageCircle } from 'lucide-react'; 
 
 const BotonWhatsApp = () => {

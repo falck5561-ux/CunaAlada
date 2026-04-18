@@ -11,7 +11,7 @@ export const useSorteos = () => {
     const [datosCliente, setDatosCliente] = useState({ nombre: '', email: '', telefono: '' });
     const [mensajeExito, setMensajeExito] = useState(null);
 
-    // MOCK DEL USUARIO LOGUEADO (Podrías luego sacarlo de tu useInicioSesion)
+    
     const emailUsuarioActual = "josueponcearch@gmail.com"; 
 
     const cargarSorteos = async () => {
@@ -43,7 +43,6 @@ export const useSorteos = () => {
 
     useEffect(() => {
         cargarSorteos();
-        // El intervalo seguirá funcionando perfecto con la nueva URL
         const interval = setInterval(cargarSorteos, 10000); 
         return () => clearInterval(interval);
     }, []);
