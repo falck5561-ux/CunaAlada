@@ -3,7 +3,7 @@ import axios from 'axios';
 // 1. Importamos nuestra URL inteligente
 import { API_URL } from '../config/api'; 
 
-export const useLogin = (setAutorizado) => {
+export const useInicioSesion = (setAutorizado) => {
     const [cargando, setCargando] = useState(false);
     const [usuario, setUsuario] = useState(JSON.parse(localStorage.getItem('cuna_usuario')));
 

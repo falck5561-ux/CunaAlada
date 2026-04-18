@@ -5,7 +5,7 @@ const AdminForm = ({
   seccion, modoEdicion, theme, 
   formAve, formProd, formSorteo, 
   handleChangeAve, handleChangeProd, handleChangeSorteo, 
-  handleFileChange, previewUrl, 
+  handleFileChange, previewUrl,   
   onSubmit, onCancel, listaAvesDisponibles 
 }) => {
   return (
@@ -38,14 +38,15 @@ const AdminForm = ({
                         accept="image/*"
                         onChange={handleFileChange}
                         className="hidden" 
-                        id="file-upload"
+                        id="file-subidaArchivos"
                     />
-                    <label htmlFor="file-upload" className={`cursor-pointer w-full h-48 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 transition-all overflow-hidden ${previewUrl ? `border-${theme.main}-400 bg-white` : `border-slate-300 hover:border-${theme.main}-400 hover:bg-slate-50`}`}>
+                    <label htmlFor="file-subidaArchivos" className={`cursor-pointer w-full h-48 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 transition-all overflow-hidden ${previewUrl ? `border-${theme.main}-400 bg-white` : `border-slate-300 hover:border-${theme.main}-400 hover:bg-slate-50`}`}>
                         {previewUrl ? (
                             <div className="relative w-full h-full group">
                                 <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     <span className="text-white font-bold text-xs flex items-center gap-2">
+                                        {/* CORRECCIÓN: Aquí estaba el error. Usamos el componente Upload importado arriba */}
                                         <Upload size={16}/> Cambiar foto
                                     </span>
                                 </div>

@@ -1,13 +1,13 @@
 import React from 'react';
 import { ShoppingBag, Calendar, Hash, RotateCw, Award, CheckCircle2, MapPin, Smartphone, Tag, PenLine } from 'lucide-react';
-import { useAveCard } from '../hooks/useAveCard';
+import { useTarjetaAve } from '../hooks/useTarjetaAve';
 
-const AveCard = ({ ave }) => {
+const TarjetaAve = ({ ave }) => {
   const {
     eclosionado, girado, toggleGiro, imgSrc, wrapperRef,
     esOferta, porcentajeDescuento, estilos, formatoMXN,
     handleMouseMove, handleTouchMove, romperHuevo
-  } = useAveCard(ave);
+  } = useTarjetaAve(ave);
 
   return (
     <div 
@@ -188,4 +188,4 @@ const AveCard = ({ ave }) => {
   );
 };
 
-export default AveCard;
+export default TarjetaAve;

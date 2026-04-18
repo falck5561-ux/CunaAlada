@@ -5,11 +5,11 @@ const cors = require('cors');
 const path = require('path'); 
 
 // --- IMPORTAR RUTAS ---
-const aveRoutes = require('./routes/aveRoutes');
-const productoRoutes = require('./routes/productoRoutes');
-const sorteoRoutes = require('./routes/sorteoRoutes');
-const authRoutes = require('./routes/authRoutes');
-const adopcionRoutes = require('./routes/adopcionRoutes'); 
+const rutasAves = require('./routes/rutasAves');
+const rutasProductos = require('./routes/rutasProductos');
+const rutasSorteos = require('./routes/rutasSorteos');
+const rutasAutenticacion = require('./routes/rutasAutenticacion');
+const rutasAdopcion = require('./routes/rutasAdopcion'); 
 
 // --- INICIALIZACIÓN ---
 const app = express();
@@ -28,11 +28,11 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cuna-alada'
     .catch(err => console.error('❌ Error Mongo:', err));
 
 // --- MONTAR RUTAS ---
-app.use('/api/aves', aveRoutes);
-app.use('/api/productos', productoRoutes);
-app.use('/api/sorteos', sorteoRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/adopcion', adopcionRoutes); 
+app.use('/api/aves', rutasAves);
+app.use('/api/productos', rutasProductos);
+app.use('/api/sorteos', rutasSorteos);
+app.use('/api/auth', rutasAutenticacion);
+app.use('/api/adopcion', rutasAdopcion); 
 
 // --- INICIO DEL SERVIDOR ---
 app.listen(PORT, () => {

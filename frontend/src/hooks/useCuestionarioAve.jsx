@@ -3,7 +3,7 @@ import { Zap, Palette, GraduationCap } from 'lucide-react';
 // 1. Importamos la base de la URL
 import { BASE_URL } from '../config/api'; 
 
-export const useQuizAve = (avesDisponibles = []) => {
+export const useCuestionarioAve = (avesDisponibles = []) => {
   const [fase, setFase] = useState('intro');
   const [pasoActual, setPasoActual] = useState(0);
   const [respuestas, setRespuestas] = useState({});

@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowRight, RotateCcw, HeartHandshake, Tag } from 'lucide-react';
-import { useQuizAve } from '../hooks/useQuizAve';
+import { useCuestionarioAve } from '../hooks/useCuestionarioAve';
 
-const QuizAve = ({ avesDisponibles = [] }) => {
+const CuestionarioAve = ({ avesDisponibles = [] }) => {
   // Extraemos toda la lógica de nuestro Custom Hook
   const {
     fase,
@@ -16,7 +16,7 @@ const QuizAve = ({ avesDisponibles = [] }) => {
     reiniciar,
     obtenerTextos,
     getImagenAve
-  } = useQuizAve(avesDisponibles);
+  } = useCuestionarioAve(avesDisponibles);
 
   const slideVariants = {
     enter: { x: 50, opacity: 0 },
@@ -135,4 +135,4 @@ const QuizAve = ({ avesDisponibles = [] }) => {
   );
 };
 
-export default QuizAve;
+export default CuestionarioAve;

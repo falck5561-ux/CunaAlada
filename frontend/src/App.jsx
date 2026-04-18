@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 
 // Importación de Páginas
-import Login from './pages/Login';
+import InicioSesion from './pages/InicioSesion';
 import Tienda from './pages/Tienda';
 import AdminPanel from './pages/AdminPanel';
 import Aves from './pages/Aves';
@@ -236,7 +236,7 @@ const AppContent = () => {
           <Route path="/cuidados" element={<Cuidados />} />
           <Route path="/registro/:token" element={<Registro />} />
           <Route path="/sorteos" element={<Sorteos />} />
-          <Route path="/admin" element={autorizado ? <AdminPanel cerrarSesion={cerrarSesion} /> : <Login setAutorizado={setAutorizado} />} />
+          <Route path="/admin" element={autorizado ? <AdminPanel cerrarSesion={cerrarSesion} /> : <InicioSesion setAutorizado={setAutorizado} />} />
         </Routes>
       </main>
 

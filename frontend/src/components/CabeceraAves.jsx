@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Crown, HelpCircle, ChevronUp } from 'lucide-react';
 
-const AvesHeader = ({ mostrarQuiz, setMostrarQuiz, onAbrirHuevos }) => {
+const CabeceraAves = ({ mostrarQuiz, setMostrarQuiz, onAbrirHuevos }) => {
   return (
     <div className="text-center mb-12 relative">
       <motion.div 
@@ -73,4 +73,4 @@ const AvesHeader = ({ mostrarQuiz, setMostrarQuiz, onAbrirHuevos }) => {
   );
 };
 
-export default AvesHeader;
+export default CabeceraAves;

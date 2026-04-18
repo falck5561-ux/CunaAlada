@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Utensils, Dribbble, ExternalLink, Heart } from 'lucide-react'; 
-import AveCard from './AveCard';
+import TarjetaAve from './TarjetaAve';
 import { useJaula, usePajarito, ZONAS } from '../hooks/useJaula';
 
 // --- ELEMENTOS SECUNDARIOS ---
@@ -199,7 +199,7 @@ const JaulaInteractiva = ({ avesDisponibles = [] }) => {
                    <X size={20} />
                 </button>
                 <div className="rounded-3xl shadow-2xl overflow-hidden bg-white py-8">
-                    <AveCard ave={aveSeleccionada} />
+                    <TarjetaAve ave={aveSeleccionada} />
                 </div>
              </motion.div>
           </motion.div>

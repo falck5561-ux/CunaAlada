@@ -3,11 +3,11 @@ import { GoogleLogin } from '@react-oauth/google';
 import { Sparkles, ShieldCheck, Bird, LogOut, LayoutDashboard, Globe, ShieldAlert } from 'lucide-react';
 
 // Importamos la lógica abstraída
-import { useLogin } from '../hooks/useLogin';
+import { useInicioSesion } from '../hooks/useInicioSesion';
 
 const Login = ({ setAutorizado }) => {
     // Usamos el Custom Hook
-    const { usuario, cargando, cerrarSesion, handleGoogleSuccess } = useLogin(setAutorizado);
+    const { usuario, cargando, cerrarSesion, handleGoogleSuccess } = useInicioSesion(setAutorizado);
 
     // --- VISTA: PERFIL ACTIVO (CERRAR SESIÓN) ---
     if (usuario) {

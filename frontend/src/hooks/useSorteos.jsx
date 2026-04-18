@@ -11,7 +11,7 @@ export const useSorteos = () => {
     const [datosCliente, setDatosCliente] = useState({ nombre: '', email: '', telefono: '' });
     const [mensajeExito, setMensajeExito] = useState(null);
 
-    // MOCK DEL USUARIO LOGUEADO (Podrías luego sacarlo de tu useLogin)
+    // MOCK DEL USUARIO LOGUEADO (Podrías luego sacarlo de tu useInicioSesion)
     const emailUsuarioActual = "josueponcearch@gmail.com"; 
 
     const cargarSorteos = async () => {

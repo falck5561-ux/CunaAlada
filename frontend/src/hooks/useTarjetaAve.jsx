@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { API_URL, BASE_URL } from '../config/api';
 
-export const useAveCard = (ave) => {
+export const useTarjetaAve = (ave) => {
   const [eclosionado, setEclosionado] = useState(false);
   const [girado, setGirado] = useState(false);
   const [imgSrc, setImgSrc] = useState('/portada.png');
@@ -29,7 +29,7 @@ export const useAveCard = (ave) => {
 
   useEffect(() => {
   if (ave?.fotoUrl) {
-    if (ave.fotoUrl.startsWith('/uploads')) {
+    if (ave.fotoUrl.startsWith('/subidaArchivoss')) {
       // ✅ Cambiamos la URL de Render por la variable BASE_URL
       setImgSrc(`${BASE_URL}${ave.fotoUrl}`);
     } else {

@@ -4,9 +4,9 @@ import { WifiOff, RefreshCw, Feather, Sparkles } from 'lucide-react';
 
 // Hooks y Componentes propios
 import { useAves } from '../hooks/useAves';
-import AvesHeader from '../components/AvesHeader';
-import AveCard from '../components/AveCard';
-import QuizAve from '../components/QuizAve';
+import CabeceraAves from '../components/CabeceraAves';
+import TarjetaAve from '../components/TarjetaAve';
+import CuestionarioAve from '../components/CuestionarioAve';
 
 const Aves = () => {
   // Usamos nuestro nuevo Custom Hook
@@ -38,7 +38,7 @@ const Aves = () => {
       <div className="relative z-10 container mx-auto px-4 py-12 max-w-7xl">
         
         {/* --- HEADER SEPARADO EN COMPONENTE --- */}
-        <AvesHeader 
+        <CabeceraAves 
           mostrarQuiz={mostrarQuiz} 
           setMostrarQuiz={setMostrarQuiz} 
           onAbrirHuevos={abrirTodosLosHuevos} 
@@ -56,7 +56,7 @@ const Aves = () => {
               className="overflow-hidden mb-16"
             >
               <div className="py-2">
-                 <QuizAve avesDisponibles={aves} />
+                 <CuestionarioAve avesDisponibles={aves} />
               </div>
             </motion.div>
           )}
@@ -142,7 +142,7 @@ const Aves = () => {
                       `}
                       onClick={() => setAveSeleccionadaId(prevId => prevId === id ? null : id)}
                     >
-                      <AveCard ave={ave} />
+                      <TarjetaAve ave={ave} />
                     </div>
                   </motion.div>
                 );
