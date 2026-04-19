@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import axios from 'axios';
+import { API_URL } from './config/api';
 
 // Importación de Páginas
 import InicioSesion from './pages/InicioSesion';
@@ -39,7 +41,7 @@ const MenuNavegacion = ({ usuario, cerrarSesion, menuMovilAbierto, setMenuMovilA
     { to: "/aves", label: "Ejemplares", icon: <Bird size={18}/> },
     { to: "/tienda", label: "Tienda", icon: <ShoppingBag size={18}/> },
     { to: "/sorteos", label: "Sorteos", icon: <Ticket size={18}/> },
-    { to: "/nido-riesgo", label: "Nido del Riesgo", icon: <Activity size={18}/> }, // <-- Nuevo enlace en el menú
+    { to: "/nido-riesgo", label: "Nido del Riesgo", icon: <Activity size={18}/> }, 
     { to: "/cuidados", label: "Academia", icon: <BookOpen size={18}/> }
   ];
 
@@ -71,6 +73,10 @@ const MenuNavegacion = ({ usuario, cerrarSesion, menuMovilAbierto, setMenuMovilA
                     <span className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Hola</span>
                     <span className="text-xs font-bold text-slate-800 leading-none truncate max-w-[80px]">{usuario.nombre.split(' ')[0]}</span>
                   </div>
+                  {/* AQUÍ SE MUESTRAN LAS PLUMAS EN TIEMPO REAL */}
+                  <div className="bg-emerald-100 px-2 py-1 rounded-lg flex items-center gap-1 ml-1">
+                    <span className="text-[10px] font-black text-emerald-700">{usuario.plumas || 0} 🪶</span>
+                  </div>
                   <button onClick={cerrarSesion} title="Cerrar Sesión" className="ml-2 p-1.5 text-rose-500 hover:bg-rose-50 rounded-full transition-colors">
                     <LogOut size={16} />
                   </button>
@@ -94,7 +100,7 @@ const MenuNavegacion = ({ usuario, cerrarSesion, menuMovilAbierto, setMenuMovilA
         </div>
       </nav>
 
-      {/* MENU MÓVIL (BarraLateral) */}
+      {/* MENU MÓVIL */}
       <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[105] transition-opacity duration-300 lg:hidden ${menuMovilAbierto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setMenuMovilAbierto(false)} />
       
       <div className={`fixed top-0 right-0 h-full w-[85%] max-w-sm glass-dark z-[110] transform transition-transform duration-500 ease-out lg:hidden shadow-2xl flex flex-col p-8 justify-between ${menuMovilAbierto ? 'translate-x-0' : 'translate-x-full'}`}>
@@ -112,7 +118,7 @@ const MenuNavegacion = ({ usuario, cerrarSesion, menuMovilAbierto, setMenuMovilA
                   <img src={usuario.foto} alt="Me" className="w-14 h-14 rounded-full border-2 border-emerald-400" />
                   <div>
                     <p className="text-white font-bold m-0">{usuario.nombre}</p>
-                    <p className="text-emerald-400 text-xs font-bold uppercase m-0">{usuario.rol}</p>
+                    <p className="text-emerald-400 text-xs font-bold uppercase m-0">{usuario.plumas || 0} PLUMAS</p>
                   </div>
                 </div>
               )}
@@ -134,11 +140,6 @@ const MenuNavegacion = ({ usuario, cerrarSesion, menuMovilAbierto, setMenuMovilA
                ACCESO
              </Link>
            )}
-           {usuario?.rol === 'admin' && (
-             <Link to="/admin" onClick={() => setMenuMovilAbierto(false)} className="w-full py-5 bg-white/10 text-white rounded-2xl text-center font-black text-lg no-underline border border-white/10 block">
-               PANEL DE CONTROL
-             </Link>
-           )}
         </div>
       </div>
     </>
@@ -148,45 +149,27 @@ const MenuNavegacion = ({ usuario, cerrarSesion, menuMovilAbierto, setMenuMovilA
 const FooterPrincipal = () => (
   <footer className="bg-slate-900 text-white pt-20 pb-10 rounded-t-[40px] md:rounded-t-[80px] relative z-20 mt-20 border-t border-emerald-900/50 overflow-hidden">
     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-50"></div>
-    <div className="container mx-auto px-8 md:px-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 mb-16">
-        <div className="lg:col-span-5 space-y-6">
-          <div className="flex items-center gap-3">
+    <div className="container mx-auto px-8 md:px-12 text-center md:text-left">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
+        <div className="lg:col-span-5 space-y-6 text-center md:text-left">
+          <div className="flex items-center justify-center md:justify-start gap-3">
               <img src="/icono.png" alt="Logo" className="h-10 w-auto opacity-90" />
               <h3 className="text-3xl font-black m-0 tracking-tighter text-white">CUNA<span className="text-emerald-500">ALADA</span></h3>
           </div>
-          <p className="text-slate-400 text-base leading-relaxed max-w-sm">
-            Dedicados a la crianza responsable y amorosa. Creamos vínculos para toda la vida entre aves y familias.
+          <p className="text-slate-400 text-base leading-relaxed max-w-sm mx-auto md:mx-0">
+            Dedicados a la crianza responsable y amorosa de aves en Campeche.
           </p>
-          <div className="flex gap-4 pt-2">
-            <a href="#" className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-emerald-600 hover:text-white transition-all"><Instagram size={20}/></a>
-            <a href="#" className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-blue-600 hover:text-white transition-all"><Facebook size={20}/></a>
-          </div>
         </div>
         <div className="lg:col-span-3 space-y-6">
           <h4 className="text-sm font-bold uppercase tracking-widest text-emerald-500">Explorar</h4>
           <div className="flex flex-col gap-3 text-slate-400 font-medium text-sm">
-            <Link to="/aves" className="hover:text-white transition-colors flex items-center gap-2 group"><span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-emerald-500 transition-colors"></span> Nuestros Ejemplares</Link>
-            <Link to="/tienda" className="hover:text-white transition-colors flex items-center gap-2 group"><span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-emerald-500 transition-colors"></span> Tienda de Accesorios</Link>
-            <Link to="/sorteos" className="hover:text-white transition-colors flex items-center gap-2 group"><span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-emerald-500 transition-colors"></span> Sorteos Exclusivos</Link>
-            <Link to="/cuidados" className="hover:text-white transition-colors flex items-center gap-2 group"><span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-emerald-500 transition-colors"></span> Guía de Cuidados</Link>
-          </div>
-        </div>
-        <div className="lg:col-span-4 space-y-6">
-          <h4 className="text-sm font-bold uppercase tracking-widest text-emerald-500">Contacto</h4>
-          <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                <p className="text-white font-bold text-sm mb-1">Campeche, México</p>
-                <p className="text-slate-400 text-xs">Envíos aéreos disponibles a toda la república.</p>
-              </div>
+            <Link to="/aves" className="hover:text-white transition-colors no-underline">Nuestros Ejemplares</Link>
+            <Link to="/tienda" className="hover:text-white transition-colors no-underline">Tienda</Link>
           </div>
         </div>
       </div>
-      <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] font-bold tracking-widest text-slate-500 uppercase">
-        <p>© {new Date().getFullYear()} CUNA ALADA • CAMPECHE</p>
-        <div className="flex items-center gap-1.5 opacity-60">
-            Creado con <Heart size={10} className="text-emerald-500 fill-emerald-500"/> por DevJP
-        </div>
+      <div className="border-t border-white/5 pt-8 text-center text-slate-500 text-[11px] font-bold tracking-widest uppercase">
+        © {new Date().getFullYear()} CUNA ALADA • CAMPECHE • Creado por DevJP
       </div>
     </div>
   </footer>
@@ -198,16 +181,18 @@ const FooterPrincipal = () => (
 
 const AppContent = () => {
   const [autorizado, setAutorizado] = useState(!!localStorage.getItem('adminToken'));
-  const [usuario, setUsuario] = useState(JSON.parse(localStorage.getItem('cuna_usuario')));
+  const [usuario, setUsuario] = useState(null);
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
   const location = useLocation();
 
+  // 1. CARGAR USUARIO SOLO AL MONTAR (EVITA QUE SE BORREN LAS PLUMAS AL NAVEGAR)
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('cuna_usuario'));
-    const auth = !!localStorage.getItem('adminToken');
-    setUsuario(user);
-    setAutorizado(auth);
-  }, [location.pathname]);
+    const savedUser = localStorage.getItem('cuna_usuario');
+    if (savedUser) {
+      setUsuario(JSON.parse(savedUser));
+    }
+    setAutorizado(!!localStorage.getItem('adminToken'));
+  }, []); 
 
   const cerrarSesion = () => {
     localStorage.clear();
@@ -238,13 +223,12 @@ const AppContent = () => {
           <Route path="/cuidados" element={<Cuidados />} />
           <Route path="/registro/:token" element={<Registro />} />
           <Route path="/sorteos" element={<Sorteos />} />
-          <Route path="/nido-riesgo" element={<NidoRiesgo />} /> {/* <-- Ruta lista */}
+          <Route path="/nido-riesgo" element={<NidoRiesgo />} />
           <Route path="/admin" element={autorizado ? <PanelAdmin cerrarSesion={cerrarSesion} /> : <InicioSesion setAutorizado={setAutorizado} />} />
         </Routes>
       </main>
 
       <BotonWhatsApp />
-      
       {!esPaginaPrivada && <FooterPrincipal />}
     </div>
   );
