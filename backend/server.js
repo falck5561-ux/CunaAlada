@@ -10,6 +10,7 @@ const rutasProductos = require('./routes/rutasProductos');
 const rutasSorteos = require('./routes/rutasSorteos');
 const rutasAutenticacion = require('./routes/rutasAutenticacion');
 const rutasAdopcion = require('./routes/rutasAdopcion'); 
+const rutasBilletera = require('./routes/rutasBilletera');
 
 // --- INICIALIZACIÓN ---
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/productos', rutasProductos);
 app.use('/api/sorteos', rutasSorteos);
 app.use('/api/auth', rutasAutenticacion);
 app.use('/api/adopcion', rutasAdopcion); 
+app.use('/api/billetera', rutasBilletera);
 
 // --- INICIO DEL SERVIDOR ---
 app.listen(PORT, () => {

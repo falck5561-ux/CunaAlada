@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 
 const useJuegoNido = () => {
-  // --- ESTADOS DE LA ECONOMÍA ---
-  const [plumas, setPlumas] = useState(230);
+  // --- ESTADOS DE LA ECONOMÍA CON MEMORIA ---
+  const [plumas, setPlumas] = useState(() => {
+    const guardado = localStorage.getItem('nido_plumas');
+    return guardado !== null ? Number(guardado) : 0;
+  });
   const [apuesta, setApuesta] = useState(10);
   const [prediccion, setPrediccion] = useState(null);
 
@@ -10,7 +13,10 @@ const useJuegoNido = () => {
   const [fase, setFase] = useState('apuestas');
   const [tiempoRestante, setTiempoRestante] = useState(10);
   const [mensaje, setMensaje] = useState({ texto: 'SISTEMA ABIERTO. HAGAN SUS PREDICCIONES.', tipo: 'normal' });
-  const [historial, setHistorial] = useState([]);
+  const [historial, setHistorial] = useState(() => {
+    const guardado = localStorage.getItem('nido_historial');
+    return guardado !== null ? JSON.parse(guardado) : [];
+  });
 
   // --- ESTADOS DEL MUNDO ---
   const [altitudes, setAltitudes] = useState([1647]);
@@ -18,35 +24,56 @@ const useJuegoNido = () => {
   const [progresoPan, setProgresoPan] = useState(0);
   const [ultimoResultado, setUltimoResultado] = useState(null);
 
-  // REFS (Para evitar cierres de scope en animaciones)
+  // GUARDADO AUTOMÁTICO DE SALDO E HISTORIAL (Persistencia en F5)
+  useEffect(() => {
+    localStorage.setItem('nido_plumas', plumas);
+  }, [plumas]);
+
+  useEffect(() => {
+    localStorage.setItem('nido_historial', JSON.stringify(historial));
+  }, [historial]);
+
+  // REFS (Para evitar cierres de scope en animaciones a 60FPS)
   const prediccionRef = useRef(null);
   const apuestaRef = useRef(10);
   const animVueloRef = useRef(null);
   const animPanRef = useRef(null);
 
   // ========================================================
-  // 1. FASE DE APUESTAS (PANEO)
+  // 1. FASE DE APUESTAS (PANEO Y RELOJ CON MEMORIA)
   // ========================================================
   useEffect(() => {
     if (fase === 'apuestas') {
-      let start = null;
-      const duration = 10000;
+      // Guardamos la hora exacta en la que empezó la ronda para que F5 no la reinicie
+      let start = localStorage.getItem('nido_reloj_inicio');
+      if (!start) {
+        start = Date.now();
+        localStorage.setItem('nido_reloj_inicio', start);
+      } else {
+        start = Number(start);
+      }
 
-      const animatePan = (timestamp) => {
-        if (!start) start = timestamp;
-        const elapsed = timestamp - start;
+      const duration = 10000; // 10 Segundos
+
+      const animatePan = () => {
+        const elapsed = Date.now() - start;
+
+        // Si ya se acabó el tiempo, borramos la memoria del reloj y volamos
+        if (elapsed >= duration) {
+          localStorage.removeItem('nido_reloj_inicio');
+          iniciarVuelo();
+          return;
+        }
+
         const p = Math.min(elapsed / duration, 1);
         const easeP = 1 - Math.pow(1 - p, 3);
 
         if (altitudes.length > 1) setProgresoPan(easeP);
-        setTiempoRestante(Math.max(0, Math.ceil(10 - elapsed / 1000)));
+        setTiempoRestante(Math.max(0, Math.ceil((duration - elapsed) / 1000)));
 
-        if (p < 1) {
-          animPanRef.current = requestAnimationFrame(animatePan);
-        } else {
-          iniciarVuelo();
-        }
+        animPanRef.current = requestAnimationFrame(animatePan);
       };
+
       animPanRef.current = requestAnimationFrame(animatePan);
       return () => cancelAnimationFrame(animPanRef.current);
     }
@@ -94,12 +121,11 @@ const useJuegoNido = () => {
     }
     setUltimoResultado({ gano, ganancia, resultadoReal: resReal });
 
-    let start = null;
+    let start = Date.now();
     const duration = 6000;
 
-    const animateFlight = (timestamp) => {
-      if (!start) start = timestamp;
-      const elapsed = timestamp - start;
+    const animateFlight = () => {
+      const elapsed = Date.now() - start;
       const p = Math.min(elapsed / duration, 1);
       const easeP = p * (2 - p);
       setProgresoVuelo(easeP);
@@ -147,16 +173,23 @@ const useJuegoNido = () => {
     }
   }, [fase]);
 
-  // ACCIÓN: Colocar apuesta
+  // ========================================================
+  // 4. ACCIÓN: COLOCAR APUESTA (NUEVA LÓGICA DE BLOQUEO)
+  // ========================================================
   const colocarApuesta = (seleccion) => {
+    // 1. Candado: Si ya hizo una predicción, rechazamos el click.
+    if (prediccion !== null) {
+      return setMensaje({ texto: 'APUESTA BLOQUEADA: Ya participas en esta ronda.', tipo: 'error' });
+    }
+
     const montoActual = Number(apuesta) || 0;
     if (fase !== 'apuestas') return;
     if (montoActual > plumas || montoActual <= 0) {
       return setMensaje({ texto: 'SALDO INSUFICIENTE O INVÁLIDO', tipo: 'error' });
     }
 
-    if (prediccion === null) setPlumas((prev) => prev - montoActual);
-
+    // 2. Se descuenta el saldo y se fija la apuesta (Ocurre solo 1 vez por ronda)
+    setPlumas((prev) => prev - montoActual);
     setPrediccion(seleccion);
     prediccionRef.current = seleccion;
     apuestaRef.current = montoActual;

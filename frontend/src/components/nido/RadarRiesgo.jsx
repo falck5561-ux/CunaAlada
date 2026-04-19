@@ -38,11 +38,11 @@ const RadarRiesgo = ({ altitudes, fase, progresoVuelo, progresoPan, ultimoResult
     cameraOffset = fase === 'apuestas' ? -((N - 1) * 70) - (progresoPan * 70) : -((N - 1) * 70);
   }
 
-  // Ángulo del ave según la dirección
+  // --- CORRECCIÓN: Ángulo del ave suavizado (de 35 a 15 grados) ---
   let anguloVuelo = 0;
   if (fase === 'volando' && ultimoResultado) {
-    if (ultimoResultado.resultadoReal === 'sube') anguloVuelo = -35;
-    if (ultimoResultado.resultadoReal === 'baja') anguloVuelo = 35;
+    if (ultimoResultado.resultadoReal === 'sube') anguloVuelo = -15;
+    if (ultimoResultado.resultadoReal === 'baja') anguloVuelo = 15;
   }
 
   return (
@@ -75,7 +75,7 @@ const RadarRiesgo = ({ altitudes, fase, progresoVuelo, progresoPan, ultimoResult
             </linearGradient>
           </defs>
           
-          {/* Sombra debajo de la línea - CORREGIDO: Se cambió polygon por path */}
+          {/* Sombra debajo de la línea - Path corregido */}
           <path d={areaData} fill="url(#estela)" stroke="none" />
           
           {/* Línea de trayectoria */}

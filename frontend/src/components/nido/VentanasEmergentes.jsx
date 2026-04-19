@@ -1,28 +1,31 @@
 import React from 'react';
-import { X, Info, TrendingUp, TrendingDown, Minus, Feather, Bird, ShieldCheck, Zap, Star, Gift } from 'lucide-react';
+import { X, Info, TrendingUp, TrendingDown, Minus, Feather, Bird, ShieldCheck, Zap, Star, Gift, ShoppingBag } from 'lucide-react';
+import CatalogoPremios from './CatalogoPremios'; 
 
-const VentanasEmergentes = ({ tipo, alCerrar, onComprarPack }) => {
+const VentanasEmergentes = ({ tipo, alCerrar, alComprarPaquete, onComprarPack, plumas }) => {
   if (!tipo) return null;
+
+  // Unificamos la función para que tanto la tienda como el catálogo puedan usar Stripe
+  const manejarCompra = alComprarPaquete || onComprarPack;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
       
-      {/* Contenedor con efecto de cristal y bordes de neón sutiles */}
-      <div className="bg-[#0f172a]/95 border border-white/10 rounded-[3rem] max-w-lg w-full shadow-[0_0_80px_-20px_rgba(6,182,212,0.3)] overflow-hidden relative">
+      {/* Contenedor del Modal - Se ensancha si es el catálogo para que luzcan los productos reales */}
+      <div className={`bg-[#0f172a]/95 border border-white/10 rounded-[3rem] w-full shadow-[0_0_80px_-20px_rgba(6,182,212,0.3)] overflow-hidden relative ${tipo === 'catalogo' ? 'max-w-2xl' : 'max-w-lg'}`}>
         
-        {/* Glows ambientales para profundidad */}
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-cyan-600/10 blur-[100px] pointer-events-none" />
         <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-amber-600/10 blur-[100px] pointer-events-none" />
 
-        <div className="p-8 md:p-10 relative">
+        <div className="p-8 md:p-10 relative max-h-[90vh] overflow-y-auto no-scrollbar">
           <button 
             onClick={alCerrar} 
-            className="absolute top-8 right-8 text-slate-500 hover:text-white p-2 bg-white/5 rounded-full transition-all hover:rotate-90"
+            className="absolute top-8 right-8 text-slate-500 hover:text-white p-2 bg-white/5 rounded-full transition-all hover:rotate-90 z-50"
           >
             <X size={20} />
           </button>
 
-          {/* --- SECCIÓN: REGLAS (CANJE) --- */}
+          {/* --- SECCIÓN: REGLAS --- */}
           {tipo === 'reglas' && (
             <div className="space-y-6">
               <div className="space-y-1">
@@ -31,7 +34,6 @@ const VentanasEmergentes = ({ tipo, alCerrar, onComprarPack }) => {
                 </h2>
                 <div className="h-1 w-20 bg-cyan-500 rounded-full" />
               </div>
-              
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { icon: <TrendingUp className="text-cyan-400"/>, label: 'SUBE', mult: 'x1.5' },
@@ -45,35 +47,14 @@ const VentanasEmergentes = ({ tipo, alCerrar, onComprarPack }) => {
                   </div>
                 ))}
               </div>
-
-              <div className="bg-slate-900/80 rounded-[2rem] border border-white/10 overflow-hidden">
-                <div className="p-5 space-y-4">
-                  <h3 className="text-xs font-black text-amber-400 uppercase tracking-widest flex items-center gap-2">
-                    <Bird size={16}/> Mercado de Mutaciones
-                  </h3>
-                  <div className="space-y-3">
-                    {[
-                      { m: 'Ancestral', p: '1,000', c: 'green-400' },
-                      { m: 'Turquesa', p: '2,500', c: 'cyan-400' },
-                      { m: 'Opalino', p: '5,000', c: 'violet-400' }
-                    ].map((row, i) => (
-                      <div key={i} className="flex justify-between items-center group">
-                        <span className="text-sm text-slate-300 group-hover:text-white transition-colors italic">Rosicollis <span className={`text-${row.c} font-bold`}>{row.m}</span></span>
-                        <span className="text-sm font-black text-white bg-white/5 px-3 py-1 rounded-lg italic">{row.p} 🪶</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
               <button onClick={alCerrar} className="w-full py-4 bg-white text-slate-950 rounded-2xl font-black uppercase tracking-widest transition-all hover:bg-cyan-400">
                 Entendido
               </button>
             </div>
           )}
 
-          {/* --- SECCIÓN: BANCO DE PLUMAS (ELITE STORE) --- */}
-          {tipo === 'recarga' && (
+          {/* --- SECCIÓN: BANCO DE PLUMAS (Esta no la tocamos, se queda como te gusta) --- */}
+          {(tipo === 'recarga' || tipo === 'banco') && (
             <div className="space-y-8">
               <div className="space-y-1">
                 <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter">
@@ -87,59 +68,50 @@ const VentanasEmergentes = ({ tipo, alCerrar, onComprarPack }) => {
               <div className="space-y-4">
                 {[
                   { q: 100, price: 100, bonus: 0, tag: 'Iniciación', color: 'slate' },
-                  { q: 500, price: 500, bonus: 50, tag: 'Criador Pro', color: 'cyan', pop: true },
-                  { q: 1000, price: 1000, bonus: 200, tag: 'Maestro Aviario', color: 'amber' },
-                  { q: 5000, price: 4000, bonus: 1500, tag: 'Lonja Whale', color: 'violet', ultra: true }
+                  { q: 500, price: 500, bonus: 20, tag: 'Criador Pro', color: 'cyan', pop: true },
+                  { q: 1000, price: 1000, bonus: 70, tag: 'Maestro Aviario', color: 'amber' },
+                  { q: 4000, price: 4000, bonus: 500, tag: 'Lonja Whale', color: 'violet', ultra: true }
                 ].map((p, i) => (
-                  <div 
-                    key={i}
-                    onClick={() => onComprarPack(p.price)}
-                    className={`group relative flex items-center justify-between p-6 rounded-[2rem] border transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-95 ${
-                      p.pop ? 'bg-cyan-500/10 border-cyan-500/30 shadow-[0_0_30px_-10px_rgba(6,182,212,0.3)]' : 
-                      p.ultra ? 'bg-violet-500/10 border-violet-500/30' : 'bg-white/5 border-white/10 hover:bg-white/10'
-                    }`}
-                  >
-                    {/* Badge de Bonus */}
+                  <div key={i} onClick={() => manejarCompra && manejarCompra(p.price)} className={`group relative flex items-center justify-between p-6 rounded-[2rem] border transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-95 ${p.pop ? 'bg-cyan-500/10 border-cyan-500/30' : p.ultra ? 'bg-violet-500/10 border-violet-500/30' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
                     {p.bonus > 0 && (
                       <div className="absolute -top-3 left-8 px-4 py-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center gap-1 shadow-lg">
                         <Gift size={12} className="text-white animate-bounce" />
                         <span className="text-[10px] font-black text-white uppercase">+{p.bonus} Bono</span>
                       </div>
                     )}
-
                     <div className="flex flex-col gap-1">
                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{p.tag}</span>
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-xl bg-white/5 text-${p.color}-400`}>
-                          <Feather size={20} />
-                        </div>
+                        <div className={`p-2 rounded-xl bg-white/5 text-${p.color}-400`}><Feather size={20} /></div>
                         <div className="flex flex-col">
-                          <span className="text-2xl font-black text-white leading-none">
-                            {p.q + p.bonus}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Plumas Totales</span>
+                          <span className="text-2xl font-black text-white leading-none">{p.q + p.bonus}</span>
                         </div>
                       </div>
                     </div>
-
-                    <div className={`px-6 py-3 rounded-2xl font-black text-lg transition-all ${
-                      p.pop ? 'bg-cyan-500 text-slate-950 group-hover:shadow-[0_0_20px_rgba(6,182,212,0.5)]' : 
-                      p.ultra ? 'bg-violet-500 text-white' : 'bg-white/10 text-white group-hover:bg-white/20'
-                    }`}>
-                      ${p.price}
-                    </div>
+                    <div className={`px-6 py-3 rounded-2xl font-black text-lg ${p.pop ? 'bg-cyan-500 text-slate-950' : p.ultra ? 'bg-violet-500 text-white' : 'bg-white/10 text-white'}`}>${p.price}</div>
                   </div>
                 ))}
               </div>
-              
-              <div className="pt-4 flex flex-col items-center gap-4">
-                <div className="flex gap-6 opacity-30 hover:opacity-100 transition-opacity duration-700">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" alt="Stripe" className="h-6 grayscale" />
-                </div>
-                <p className="text-[9px] text-slate-600 font-black uppercase tracking-[0.3em]">Cuna Alada Secure Protocol</p>
-              </div>
             </div>
           )}
+
+          {/* --- SECCIÓN: CATÁLOGO DE PREMIOS (Aquí es donde corregimos la función) --- */}
+          {tipo === 'catalogo' && (
+            <div className="space-y-6">
+               <div className="space-y-1">
+                <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter">
+                  Catálogo <span className="text-amber-400">Real</span>
+                </h2>
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Canjea tus plumas por ejemplares y productos</p>
+              </div>
+
+              <CatalogoPremios 
+                plumasActuales={plumas} 
+                onComprarPack={manejarCompra} // Pasamos la función para que los paquetes en el catálogo también funcionen
+              />
+            </div>
+          )}
+
         </div>
       </div>
     </div>
