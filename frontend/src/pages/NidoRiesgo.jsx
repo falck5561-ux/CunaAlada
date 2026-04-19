@@ -9,21 +9,24 @@ import VentanasEmergentes from '../components/nido/VentanasEmergentes';
 import ModalPagoPlumas from '../components/nido/ModalPagoPlumas'; 
 import { Info, ShoppingBag } from 'lucide-react'; 
 
-const NidoRiesgo = () => {
+const NidoRiesgo = ({ setUsuarioGlobal }) => {
+  // 1. Cargamos la lógica del juego
+  // PASAMOS setUsuarioGlobal al hook para que el Header se actualice al instante
   const {
     plumas, apuesta, setApuesta, prediccion, fase,
     tiempoRestante, mensaje, historial, altitudes,
     progresoVuelo, progresoPan, ultimoResultado, colocarApuesta
-  } = useJuegoNido();
+  } = useJuegoNido(setUsuarioGlobal); 
 
   const [modalActivo, setModalActivo] = useState(null); 
   const [secretoStripe, setSecretoStripe] = useState(null);
   const [plumasPendientes, setPlumasPendientes] = useState(0);
 
-  // 1. Solicitar intención de pago al Backend
+  // ==========================================================
+  // LÓGICA DE PAGOS (Stripe)
+  // ==========================================================
   const manejarCompraStripe = async (precio) => {
     try {
-      // Usamos la API_URL global
       const respuesta = await axios.post(`${API_URL}/billetera/pago-plumas`, { 
         monto: precio 
       });
@@ -39,7 +42,6 @@ const NidoRiesgo = () => {
     }
   };
 
-  // 2. FUNCIÓN CRÍTICA: Guardar plumas tras pago exitoso
   const alCompletarPago = async (cantidadPlumas) => {
     try {
       const userLocal = JSON.parse(localStorage.getItem('cuna_usuario'));
@@ -47,26 +49,26 @@ const NidoRiesgo = () => {
 
       const nuevoTotal = (userLocal.plumas || 0) + cantidadPlumas;
 
-      // A. AVISAR AL SERVIDOR (Para que no se borren al cerrar sesión)
+      // Sincronizar con el servidor
       await axios.patch(`${API_URL}/usuarios/sincronizar-plumas`, {
         email: userLocal.email,
         plumas: nuevoTotal
       });
 
-      // B. ACTUALIZAR LOCALSTORAGE (Para que el menú y App.jsx lo vean)
-      userLocal.plumas = nuevoTotal;
-      localStorage.setItem('cuna_usuario', JSON.stringify(userLocal));
+      // Actualizar local y globalmente
+      const usuarioActualizado = { ...userLocal, plumas: nuevoTotal };
+      localStorage.setItem('cuna_usuario', JSON.stringify(usuarioActualizado));
       
-      // Limpiar estados de Stripe
+      if (setUsuarioGlobal) setUsuarioGlobal(usuarioActualizado);
+      
       setSecretoStripe(null);
       setPlumasPendientes(0);
       
-      // C. RECARGAR para sincronizar el Hook del juego
+      // Recargamos para que el Hook inicialice con el nuevo saldo de la Cartera
       window.location.reload(); 
 
     } catch (error) {
-      console.error("Error al sincronizar plumas tras pago:", error);
-      alert("Pago exitoso, pero hubo un error al sincronizar. Recarga la página.");
+      console.error("Error tras pago:", error);
     }
   };
 
@@ -90,6 +92,7 @@ const NidoRiesgo = () => {
           </button>
         </div>
 
+        {/* Marcador superior del juego */}
         <MarcadorNido 
           plumas={plumas} 
           tiempoRestante={tiempoRestante} 
@@ -106,6 +109,7 @@ const NidoRiesgo = () => {
             ultimoResultado={ultimoResultado}
           />
 
+          {/* Banner de mensajes del sistema */}
           <div className={`text-center py-3 mb-6 rounded-xl font-bold text-xs uppercase tracking-wider shadow-sm border transition-all ${
             mensaje.tipo === 'exito' ? 'bg-cyan-950/40 text-cyan-400 border-cyan-800' : 
             mensaje.tipo === 'error' ? 'bg-rose-950/40 text-rose-400 border-rose-800' : 
@@ -125,6 +129,7 @@ const NidoRiesgo = () => {
           />
         </div>
         
+        {/* Historial de vuelos */}
         {historial.length > 0 && (
           <div className="flex gap-2 justify-end overflow-hidden px-4 mt-6">
             {historial.map((h, i) => (
