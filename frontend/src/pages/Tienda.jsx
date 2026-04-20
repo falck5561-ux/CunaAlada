@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import {
   ShoppingBag,
   X,
@@ -10,6 +11,8 @@ import {
   Minus,
   Tag,
   Info,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -40,7 +43,13 @@ const Toast = ({ mensaje, tipo }) => (
   </div>
 );
 
-const FormularioPago = ({ datos, setDatos, onSuccess, totalCarrito }) => {
+/* --- COMPONENTES UI PARA PAGOS --- */
+const FormularioPagoTarjeta = ({
+  datos,
+  setDatos,
+  onSuccess,
+  totalCarrito,
+}) => {
   const stripe = useStripe();
   const elements = useElements();
   const [procesandoPago, setProcesandoPago] = useState(false);
@@ -109,7 +118,7 @@ const FormularioPago = ({ datos, setDatos, onSuccess, totalCarrito }) => {
   };
 
   return (
-    <form onSubmit={procesarPago} className="space-y-4">
+    <form onSubmit={procesarPago} className="space-y-2.5">
       <div>
         <input
           type="text"
@@ -117,7 +126,7 @@ const FormularioPago = ({ datos, setDatos, onSuccess, totalCarrito }) => {
           value={datos.nombre}
           onChange={(e) => setDatos({ ...datos, nombre: e.target.value })}
           disabled={procesandoPago}
-          className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700"
+          className="w-full px-4 py-2 rounded-2xl bg-white border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700"
           placeholder="Nombre completo"
         />
       </div>
@@ -128,7 +137,7 @@ const FormularioPago = ({ datos, setDatos, onSuccess, totalCarrito }) => {
           value={datos.email}
           onChange={(e) => setDatos({ ...datos, email: e.target.value })}
           disabled={procesandoPago}
-          className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700"
+          className="w-full px-4 py-1 rounded-2xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700"
           placeholder="Correo electrónico"
         />
         <input
@@ -137,13 +146,13 @@ const FormularioPago = ({ datos, setDatos, onSuccess, totalCarrito }) => {
           value={datos.telefono}
           onChange={(e) => setDatos({ ...datos, telefono: e.target.value })}
           disabled={procesandoPago}
-          className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700"
+          className="w-full px-4 py-1 rounded-2xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700"
           placeholder="Teléfono"
         />
       </div>
 
-      <div className="mt-4 p-4 rounded-2xl bg-white border-2 border-slate-200 hover:border-emerald-400 transition-colors">
-        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">
+      <div className="mt-2 px-4 pt-2 rounded-2xl bg-white border-2 border-slate-200 hover:border-emerald-400 transition-colors">
+        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 block">
           Datos de la Tarjeta
         </label>
         <div className="p-2">
@@ -152,17 +161,17 @@ const FormularioPago = ({ datos, setDatos, onSuccess, totalCarrito }) => {
       </div>
 
       {errorStripe && (
-        <div className="p-4 bg-rose-50 text-rose-600 rounded-xl flex items-center gap-2 text-sm font-bold border border-rose-200">
+        <div className="px-4 py-3 bg-rose-50 text-rose-600 rounded-xl flex items-center gap-2 text-sm font-bold border border-rose-200">
           <AlertCircle size={18} /> {errorStripe}
         </div>
       )}
 
-      <div className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl border border-emerald-100 mt-6 shadow-sm">
+      <div className="px-6 pb-2 bg-gradient-to-br from-indigo-100 to-sky-100 rounded-3xl border border-indigo-200 mt-6 shadow-sm">
         <div className="flex justify-between items-end mt-4">
-          <span className="text-emerald-700 text-sm uppercase font-bold tracking-wider">
+          <span className="text-indigo-700 text-sm uppercase font-bold tracking-wider">
             Total a Pagar
           </span>
-          <span className="text-4xl font-black text-emerald-600">
+          <span className="text-4xl font-black text-indigo-600">
             ${totalCarrito}
           </span>
         </div>
@@ -171,7 +180,7 @@ const FormularioPago = ({ datos, setDatos, onSuccess, totalCarrito }) => {
       <button
         type="submit"
         disabled={procesandoPago || 3 === 0 || !stripe}
-        className={`w-full mt-6 py-5 rounded-2xl font-black text-white flex justify-center items-center gap-3 transition-all shadow-xl
+        className={`w-full mt-6 px-4 py-3 rounded-2xl font-black text-white flex justify-center items-center gap-3 transition-all shadow-xl
                 ${3 === 0 || procesandoPago ? "bg-slate-300 shadow-none cursor-not-allowed" : "bg-gray-900 hover:bg-emerald-600 hover:-translate-y-1 hover:shadow-emerald-500/30"}`}
       >
         {procesandoPago ? (
@@ -185,40 +194,112 @@ const FormularioPago = ({ datos, setDatos, onSuccess, totalCarrito }) => {
   );
 };
 
-// const ElegirMétodoPago = () => {
-//   const metodosPagoDisponibles = [
-//     { id: 0, nombre: "WhatsApp" },
-//     { id: 1, nombre: "Tarjeta" },
-//     // Métodos de pago en el futuro
-//     // {id: #, nombre: "texto"},
-//   ];
-//   const [metodoPago, setMetodoPago] = useState(metodosPagoDisponibles[0].id);
-//   return (
-//     <div className="space-y-4">
-//       {metodosPagoDisponibles.map((metodo) => (
-//         <div className="inline-flex">
-//           <button
-//             key={metodo.id}
-//             onClick={() => setMetodoPago(metodo.id)}
-//             className="
-//             p-2
-//             rounded-md
-//             text-md
-//             outline-black outline outline-solid
-//             items-center justify-center
-//             font-black   transition-all duration-300 shadow-xl overflow-hidden relative group/btn bg-emerald-600 text-white
-//             hover:bg-emerald-700
-//             hover:shadow-emerald-500/30
-//             "
-//           >
-//             {metodo.nombre}
-//           </button>
-//         </div>
-//       ))}
-//     </div>
-//   );
-// };
+const ElegirMetodoPago = ({
+  carrito,
+  totalCarrito,
+  generarLinkWhatsApp,
+  datosCliente,
+  setDatosCliente,
+  handlePagoExitoso,
+}) => {
+  const metodosPagoDisponibles = [
+    { id: 0, nombre: "WhatsApp" },
+    { id: 1, nombre: "Tarjeta" },
+    // { id: 999, nombre: "Prueba" },
+  ];
+  const [metodoPago, setMetodoPago] = useState(metodosPagoDisponibles[0].id);
 
+  return (
+    <div className="flex flex-col min-h-[24rem] bg-slate-600 shadow-[0_-4px_15px_rgba(0,0,0,0.05)]">
+      <div
+        className="
+        py-3 px-5 gap-2    
+        flex flex-wrap flex-shrink-0"
+      >
+        {metodosPagoDisponibles.map((metodo) => (
+          <button
+            key={metodo.id}
+            onClick={() => setMetodoPago(metodo.id)}
+            className={`px-4 py-2 text-lg
+              rounded-md font-bold border-2 transition shadow-lg ${
+                metodo.id === metodoPago
+                  ? "bg-emerald-500 text-white border-emerald-700 hover:bg-emerald-600"
+                  : "bg-gray-200 text-gray-800 border-gray-400 hover:bg-gray-300"
+              }`}
+          >
+            {metodo.nombre}
+          </button>
+        ))}
+      </div>
+
+      {/* Selector de método de pago */}
+      <div className="flex-1 bg-slate-800 shadow-lg p-5 overflow-y-auto">
+        {/* Pago por WhatsApp */}
+        {metodoPago === 0 ? (
+          <div
+            className="
+                p-5
+                bg-slate-700
+                rounded-3xl border-t
+                border-gray-500
+                shadow-[0_-4px_15px_rgba(0,0,0,0.05)]
+              "
+          >
+            <div className="flex justify-between items-end my-5">
+              <span className="text-white font-medium">Total a pagar</span>
+              <span className="text-3xl font-black text-slate-200">
+                ${totalCarrito}
+              </span>
+            </div>
+            <a
+              href={generarLinkWhatsApp()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+                  btn-checkout-interno
+                  py-4 gap-2
+                  w-full rounded-xl 
+                  bg-emerald-600
+                  text-white font-bold
+                  flex items-center justify-center
+                  transition active:scale-95
+                hover:bg-emerald-700
+                shadow-emerald-800
+                  shadow-lg"
+            >
+              <MessageCircle size={20} /> Finalizar Pedido
+            </a>
+          </div>
+        ) : // Pago por Tarjeta
+        metodoPago === 1 ? (
+          <div className="bg-slate-700 p-5 rounded-3xl shadow-sm border-t border-gray-500">
+            <Elements stripe={stripePromise}>
+              <FormularioPagoTarjeta
+                datos={datosCliente}
+                setDatos={setDatosCliente}
+                onSuccess={handlePagoExitoso}
+                totalCarrito={totalCarrito}
+              />
+            </Elements>
+          </div>
+        ) : (
+          // Método de Pago no registrado
+          <div className="px-4 py-3 bg-slate-700 rounded-3xl border-t border border-gray-500 shadow-[0_-4px_15px_rgba(0,0,0,0.05)]">
+            <p className="text-lg text-amber-300 text-justify">
+              Este método de pago aún no ha sido integrado, por lo que no
+              debería ser visible todavía.
+              <p className="mt-5 justify-center flex text-2xl text-red-500 font-bold ">
+                Si ve este mensaje, por favor repórtelo.
+              </p>
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// FUNCIÓN PRINCIPAL DE LA PÁGINA
 const Tienda = () => {
   // Extraemos todo lo que necesitamos del Custom Hook
   const {
@@ -254,6 +335,7 @@ const Tienda = () => {
       {notificacion && (
         <Toast mensaje={notificacion.msj} tipo={notificacion.tipo} />
       )}
+
       {/* HEADER */}
       <div className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
@@ -289,6 +371,7 @@ const Tienda = () => {
           </div>
         </div>
       </div>
+
       {/* GRID PRODUCTOS */}
       <div className="container mx-auto px-4 mt-8">
         {cargando && <div className="text-center py-20">Cargando...</div>}
@@ -408,6 +491,7 @@ const Tienda = () => {
           })}
         </div>
       </div>
+
       {/* DRAWER CARRITO */}
       {carritoAbierto && (
         <div className="fixed inset-0 z-[100] flex justify-end">
@@ -416,7 +500,7 @@ const Tienda = () => {
             onClick={() => setCarritoAbierto(false)}
           ></div>
 
-          <div className="relative w-full max-w-xl bg-white h-full shadow-2xl flex flex-col drawer-entrada">
+          <div className="relative w-full max-w-xl bg-white h-full shadow-2xl flex flex-col overflow-hidden drawer-entrada">
             <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white shadow-sm z-10">
               <h2 className="text-xl font-black flex items-center gap-2 text-gray-800">
                 <ShoppingBag className="text-emerald-600" /> Tu Pedido
@@ -428,7 +512,7 @@ const Tienda = () => {
                 <X size={20} />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50">
+            <div className="flex-1 overflow-y-auto pt-5 space-y-4 bg-gray-50">
               {carrito.length === 0 ? (
                 <p className="text-center py-20 opacity-50">
                   Tu carrito está vacío
@@ -481,45 +565,16 @@ const Tienda = () => {
                 ))
               )}
             </div>
-            {/* <ElegirMétodoPago /> */}
             {carrito.length > 0 && (
-              <div className="p-6 bg-white border-t border-gray-100 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] z-10">
-                <div className="flex justify-between items-end mb-4">
-                  <span className="text-gray-500 font-medium">
-                    Total Estimado
-                  </span>
-                  <span className="text-3xl font-black text-gray-900">
-                    ${totalCarrito}
-                  </span>
-                </div>
-                <a
-                  href={generarLinkWhatsApp()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-checkout-interno w-full bg-emerald-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-700 transition active:scale-95 shadow-emerald-200 shadow-lg"
-                >
-                  <MessageCircle size={20} /> Finalizar Pedido
-                </a>
-                {/* --- MODAL DETALLE --- */}
-                <button
-                  onClick={() => abrirModal(true)}
-                  className="w-full py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-3 transition-all duration-300 shadow-xl overflow-hidden relative group/btn bg-gray-900 text-white hover:bg-emerald-600 hover:shadow-emerald-500/30 hover:-translate-y-1"
-                >
-                  <span className="relative z-10">
-                    Elegir Números y Comprar
-                  </span>
-                </button>
-                tttttttttttttt
-                <Elements stripe={stripePromise}>
-                  <FormularioPago
-                    datos={datosCliente}
-                    setDatos={setDatosCliente}
-                    onSuccess={handlePagoExitoso}
-                    totalCarrito={totalCarrito}
-                  />
-                </Elements>
-                <p />
-                uuuuuuuuuuuuuuuuuuuuu
+              <div className="flex-shrink-0 border-t border-gray-100 bg-gray-50">
+                <ElegirMetodoPago
+                  carrito={carrito}
+                  totalCarrito={totalCarrito}
+                  generarLinkWhatsApp={generarLinkWhatsApp}
+                  datosCliente={datosCliente}
+                  setDatosCliente={setDatosCliente}
+                  handlePagoExitoso={handlePagoExitoso}
+                />
               </div>
             )}
           </div>
