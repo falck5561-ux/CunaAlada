@@ -1,15 +1,20 @@
 import React from 'react';
 import { API_URL } from '../../config/api'; 
-import { CheckCircle, Archive, AlertCircle, Bird, Tag, User, Hash, Users, Trophy, Copy, Edit2, Trash2 } from 'lucide-react';
+import { 
+  CheckCircle, Archive, AlertCircle, Bird, Tag, 
+  User, Hash, Users, Trophy, Copy, Edit2, 
+  Trash2, Eye, EyeOff 
+} from 'lucide-react';
 
 const TablaAdmin = ({ 
   seccion, listaFiltrada, 
   filtroEstado, setFiltroEstado, theme,
   prepararEdicion, abrirModalEliminar, setModalParticipantes, 
-  revelarGanador, generarLinkRegistro 
+  revelarGanador, generarLinkRegistro, cambiarVisibilidadSorteo 
 }) => {
   return (
-    <div>
+    <div className="animate-in fade-in duration-500">
+      {/* Filtros superiores solo para la sección de Aves */}
       {seccion === 'aves' && (
         <div className="flex gap-4 mb-6">
             <button 
@@ -27,42 +32,45 @@ const TablaAdmin = ({
         </div>
       )}
 
-      <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+      {/* Tabla Principal */}
+      <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-slate-50/80 text-slate-500 font-bold uppercase text-[11px] tracking-wider border-b border-slate-100">
+            <thead className="bg-slate-50/80 text-slate-500 font-bold uppercase text-[11px] tracking-widest border-b border-slate-100">
               <tr>
-                {seccion !== 'sorteos' && <th className="px-8 py-5">Foto</th>}
-                <th className="px-6 py-5">
-                  {seccion === 'aves' ? 'Especie y Mutación' : seccion === 'productos' ? 'Producto' : 'Premio / Evento'}
+                {seccion !== 'sorteos' && <th className="px-8 py-6">Vista Previa</th>}
+                <th className="px-6 py-6">
+                  {seccion === 'aves' ? 'Especie y Mutación' : seccion === 'productos' ? 'Detalles del Producto' : 'Información del Sorteo'}
                 </th>
-                <th className="px-6 py-5">
-                    {seccion === 'sorteos' ? 'Progreso y Estado' : 'Precio'}
+                <th className="px-6 py-6">
+                    {seccion === 'sorteos' ? 'Progreso y Valor' : 'Precio de Venta'}
                 </th>
-                <th className="px-6 py-5 text-right">Acciones</th>
+                <th className="px-6 py-6 text-right">Acciones de Gestión</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {listaFiltrada.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="p-16 text-center">
-                    <div className="flex flex-col items-center justify-center text-slate-300 gap-3">
-                      <AlertCircle size={48} strokeWidth={1.5} />
-                      <span className="font-medium text-slate-400">
+                  <td colSpan="4" className="p-20 text-center">
+                    <div className="flex flex-col items-center justify-center text-slate-300 gap-4">
+                      <div className="p-6 bg-slate-50 rounded-full">
+                        <AlertCircle size={48} strokeWidth={1.5} className="text-slate-200" />
+                      </div>
+                      <span className="font-bold text-slate-400 uppercase tracking-widest text-xs">
                           {seccion === 'aves' && filtroEstado === 'vendidas' 
-                              ? 'No hay aves vendidas aún.' 
-                              : 'No se encontraron resultados.'}
+                              ? 'No hay aves en el historial.' 
+                              : 'Sin registros para mostrar.'}
                       </span>
                     </div>
                   </td>
                 </tr>
               ) : listaFiltrada.map((item) => (
-                <tr key={item._id} className="group hover:bg-slate-50/80 transition-colors duration-200">
+                <tr key={item._id} className="group hover:bg-slate-50/50 transition-all duration-200">
                   
-                  {/* COLUMNA FOTO (Solo Aves y Productos) */}
+                  {/* COLUMNA FOTO (Aves / Productos) */}
                   {seccion !== 'sorteos' && (
                     <td className="px-8 py-5">
-                      <div className="w-16 h-16 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-white group-hover:shadow-md transition-all">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 group-hover:shadow-md transition-all">
                         <img 
                             src={
                                 (item.foto || item.fotoUrl)
@@ -71,12 +79,9 @@ const TablaAdmin = ({
                                     : `${API_URL.replace('/api', '')}${item.foto || item.fotoUrl}` )
                                 : '/portada.png'
                             }
-                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" 
-                            alt="img"
-                            onError={(e) => {
-                                e.target.onerror = null; 
-                                e.target.src="/portada.png"
-                            }}
+                            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" 
+                            alt="miniatura"
+                            onError={(e) => { e.target.src="/portada.png" }}
                         />
                       </div>
                     </td>
@@ -86,84 +91,77 @@ const TablaAdmin = ({
                   <td className="px-6 py-5 align-middle">
                     {seccion === 'sorteos' ? (
                       <div>
-                          <div className="font-bold text-slate-800 text-lg mb-1">{item.titulo}</div>
-                          {item.aveId && (
-                              <span className="flex items-center gap-1.5 font-mono text-xs bg-slate-100 w-fit px-2 py-0.5 rounded-md text-slate-600 border border-slate-200">
-                                <Bird size={12} className="text-slate-400"/> {item.aveId.especie} {item.aveId.mutacion}
-                              </span>
-                          )}
+                          <div className="font-black text-slate-800 text-lg mb-1 uppercase italic tracking-tighter">{item.titulo}</div>
+                          <div className="flex items-center gap-2">
+                             {item.aveId && (
+                                <span className="flex items-center gap-1.5 font-bold text-[10px] bg-indigo-50 px-2 py-0.5 rounded-lg text-indigo-600 border border-indigo-100 uppercase">
+                                  <Bird size={12}/> {item.aveId.especie}
+                                </span>
+                             )}
+                             {!item.visible && (
+                                <span className="flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase">
+                                  <EyeOff size={10}/> Oculto
+                                </span>
+                             )}
+                          </div>
                       </div>
                     ) : (
                       <>
-                        <div className="font-bold text-slate-800 text-lg mb-1 flex items-center gap-2">
+                        <div className="font-bold text-slate-800 text-lg mb-1 flex items-center gap-2 uppercase tracking-tight">
                           {seccion === 'aves' ? item.especie : item.nombre}
-                          {item.enPromocion && <Tag size={14} className="text-red-500 fill-red-100"/>}
-                          {seccion === 'aves' && item.estado !== 'disponible' && item.estado && (
-                              <span className={`text-[10px] px-2 py-0.5 rounded-md border uppercase font-bold ${item.estado === 'vendido' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-yellow-50 text-yellow-600 border-yellow-200'}`}>
-                                  {item.estado}
-                              </span>
-                          )}
+                          {item.enPromocion && <Tag size={14} className="text-rose-500 fill-rose-100 animate-pulse"/>}
                         </div>
 
                         {seccion === 'aves' && item.nombreAsignado && (
                           <div className="mb-2">
-                              <span className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-lg text-xs font-bold border border-indigo-100 shadow-sm">
-                                  <span className="uppercase text-[9px] tracking-wider text-indigo-400 font-medium">Nombre:</span>
+                              <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg text-xs font-black border border-emerald-100 shadow-sm uppercase italic">
                                   {item.nombreAsignado}
-                                  {item.propietario && (
-                                      <span className="font-normal text-indigo-400 ml-1 text-[10px] flex items-center">
-                                          <User size={10} className="mr-0.5"/> {item.propietario}
-                                      </span>
-                                  )}
                               </span>
                           </div>
                         )}
                         
-                        <div className="text-sm text-slate-500 flex flex-col gap-1.5">
+                        <div className="text-[11px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
                           {seccion === 'aves' ? (
                             <>
-                              <span className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></span> 
-                                {item.mutacion}
-                              </span>
-                              {item.anillo && (
-                              <span className="flex items-center gap-1.5 font-mono text-xs bg-slate-100 w-fit px-2 py-0.5 rounded-md text-slate-600 border border-slate-200">
-                                  <Hash size={12} className="text-slate-400"/> {item.anillo}
-                              </span>
-                              )}
+                              <span className="w-2 h-2 rounded-full bg-emerald-400"></span> 
+                              {item.mutacion}
+                              {item.anillo && <span className="text-slate-300">|</span>}
+                              <span className="text-slate-500">{item.anillo}</span>
                             </>
                           ) : (
-                            <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md text-xs font-bold w-fit border border-blue-100">{item.categoria}</span>
+                            <span className="bg-blue-50 text-blue-500 px-2 py-0.5 rounded-md">{item.categoria}</span>
                           )}
                         </div>
                       </>
                     )}
                   </td>
 
-                  {/* COLUMNA PRECIO / ESTADO DE SORTEO */}
+                  {/* COLUMNA PRECIO / PROGRESO */}
                   <td className="px-6 py-5 align-middle">
                     {seccion === 'sorteos' ? (
-                      <div className="space-y-1">
-                          <div className="text-sm text-slate-500">
-                              Vendidos: <span className="font-bold text-violet-600">{item.boletosVendidos?.length || 0}</span> / {item.totalBoletos}
+                      <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                             <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-violet-500" 
+                                  style={{ width: `${Math.min(((item.boletosVendidos?.length || 0) / item.totalBoletos) * 100, 100)}%` }}
+                                />
+                             </div>
+                             <span className="text-[10px] font-black text-slate-400 uppercase">{item.boletosVendidos?.length || 0}/{item.totalBoletos}</span>
                           </div>
-                          <div className="text-sm text-slate-500">
-                              Boleto: <span className="font-bold">${item.precioBoleto}</span>
-                          </div>
-                          <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase inline-block mt-1
-                            ${item.estado === 'ACTIVO' ? 'bg-emerald-100 text-emerald-700' : 
-                              item.estado === 'LLENO' ? 'bg-yellow-100 text-yellow-700 animate-pulse' : 
+                          <div className="text-xs font-bold text-slate-600 italic">Ticket: ${item.precioBoleto}</div>
+                          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase inline-block
+                            ${item.estado === 'ACTIVO' ? 'bg-emerald-100 text-emerald-600' : 
+                              item.estado === 'LLENO' ? 'bg-amber-100 text-amber-600 animate-pulse' : 
                               'bg-slate-100 text-slate-500'}`}>
                             {item.estado}
                           </span>
                       </div>
                     ) : (
                       <>
-                        <div className={`font-bold text-xl text-${theme.main}-600`}>${item.precio}</div>
-                        {item.enPromocion && (
-                          <span className="bg-rose-50 text-rose-500 text-[10px] px-2.5 py-1 rounded-full font-bold border border-rose-100 inline-block mt-2 tracking-wide uppercase shadow-sm">
-                            ¡Oferta!
-                          </span>
+                        <div className={`font-black text-2xl text-${theme.main}-600 tracking-tighter italic`}>${item.precio}</div>
+                        {item.precioOriginal && (
+                           <div className="text-[10px] text-slate-400 line-through font-bold">${item.precioOriginal}</div>
                         )}
                       </>
                     )}
@@ -172,47 +170,63 @@ const TablaAdmin = ({
                   {/* COLUMNA ACCIONES */}
                   <td className="px-6 py-5 align-middle text-right">
                     
-                    {/* Acciones Sorteos */}
+                    {/* ACCIONES ESPECÍFICAS PARA SORTEOS */}
                     {seccion === 'sorteos' ? (
-                        <div className="flex flex-col items-end gap-2">
+                        <div className="flex justify-end items-center gap-2">
+                            {/* Ver Participantes */}
                             <button 
                                 onClick={() => setModalParticipantes({ show: true, boletos: item.boletosVendidos || [], tituloSorteo: item.titulo })}
-                                className="bg-slate-100 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-violet-100 hover:text-violet-700 transition flex items-center gap-1.5"
-                                title="Ver Participantes"
+                                className="p-2.5 bg-slate-100 text-slate-500 hover:bg-violet-100 hover:text-violet-600 rounded-2xl transition-all"
+                                title="Participantes"
                             >
-                                <Users size={14}/> Ver Participantes
+                                <Users size={18}/>
                             </button>
-                            
+
+                            {/* Revelar Ganador (Solo si está lleno) */}
                             {item.estado === 'LLENO' && (
-                                <button onClick={() => revelarGanador(item._id)} className="bg-violet-600 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-lg shadow-violet-200 hover:bg-violet-700 transition flex items-center gap-1.5">
-                                    <Trophy size={14}/> Revelar Ganador
+                                <button 
+                                  onClick={() => revelarGanador(item._id)} 
+                                  className="p-2.5 bg-amber-500 text-white rounded-2xl shadow-lg shadow-amber-200 hover:bg-amber-600 transition-all scale-110"
+                                >
+                                    <Trophy size={18}/>
                                 </button>
                             )}
-                            
-                            {item.estado === 'FINALIZADO' && (
-                                <div className="text-sm font-bold text-slate-800 bg-violet-50 px-3 py-2 rounded-lg border border-violet-100 inline-block text-left">
-                                    🏆 <span className="text-violet-600">{item.ganador?.nombreCliente || 'Desconocido'}</span>
-                                    <br/><span className="text-[10px] text-slate-500 font-normal">Ticket #{item.ganador?.numeroBoleto}</span>
-                                </div>
-                            )}
+
+                            {/* Ocultar / Mostrar (EL OJO) */}
+                            <button 
+                              onClick={() => cambiarVisibilidadSorteo(item._id)}
+                              className={`p-2.5 rounded-2xl transition-all ${item.visible ? 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200' : 'bg-slate-200 text-slate-500 hover:bg-slate-300'}`}
+                              title={item.visible ? "Visible en Tienda" : "Oculto en Tienda"}
+                            >
+                                {item.visible ? <Eye size={18} /> : <EyeOff size={18} />}
+                            </button>
+
+                            {/* Borrar Sorteo */}
+                            <button 
+                              onClick={() => abrirModalEliminar(item._id)} 
+                              className="p-2.5 bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white rounded-2xl transition-all"
+                            >
+                                <Trash2 size={18}/>
+                            </button>
                         </div>
                     ) : (
-                        /* Acciones Aves y Productos */
-                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-300">
+                        /* ACCIONES PARA AVES Y PRODUCTOS */
+                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0 duration-300">
                           {seccion === 'aves' && (
                               <button 
                                 onClick={() => generarLinkRegistro(item._id)} 
-                                className="p-2.5 bg-yellow-100 text-yellow-700 hover:bg-yellow-500 hover:text-white rounded-xl transition-all font-bold"
-                                title="Copiar Link de Venta"
+                                className="p-2.5 bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white rounded-xl transition-all"
+                                title="Copiar Link"
                               >
                                 <Copy size={18} />
                               </button>
                           )}
 
-                          <button onClick={() => prepararEdicion(item)} className="p-2.5 text-blue-500 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all hover:shadow-sm border border-transparent hover:border-blue-100" title="Editar">
+                          <button onClick={() => prepararEdicion(item)} className="p-2.5 bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white rounded-xl transition-all" title="Editar">
                             <Edit2 size={18}/>
                           </button>
-                          <button onClick={() => abrirModalEliminar(item._id)} className="p-2.5 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all hover:shadow-sm border border-transparent hover:border-rose-100" title="Eliminar">
+
+                          <button onClick={() => abrirModalEliminar(item._id)} className="p-2.5 bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white rounded-xl transition-all" title="Eliminar">
                             <Trash2 size={18}/>
                           </button>
                         </div>

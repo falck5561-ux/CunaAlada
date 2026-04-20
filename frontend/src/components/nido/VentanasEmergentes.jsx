@@ -1,65 +1,150 @@
-import React from 'react';
-import { X, Info, TrendingUp, TrendingDown, Minus, Feather, Bird, ShieldCheck, Zap, Star, Gift, ShoppingBag } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { 
+  X, TrendingUp, TrendingDown, Minus, Info, 
+  Zap, ShieldAlert, Crosshair, Target, Feather,
+  Bird, ShieldCheck, Star, Gift, ShoppingBag 
+} from 'lucide-react';
 import CatalogoPremios from './CatalogoPremios'; 
 
 const VentanasEmergentes = ({ tipo, alCerrar, alComprarPaquete, onComprarPack, plumas }) => {
+  const [animarEntrada, setAnimarEntrada] = useState(false);
+
+  // Efecto suave al abrir cualquier modal
+  useEffect(() => {
+    if (tipo) {
+      setTimeout(() => setAnimarEntrada(true), 10);
+    } else {
+      setAnimarEntrada(false);
+    }
+  }, [tipo]);
+
   if (!tipo) return null;
 
   // Unificamos la función para que tanto la tienda como el catálogo puedan usar Stripe
   const manejarCompra = alComprarPaquete || onComprarPack;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+    <div className={`fixed inset-0 z-[200] flex items-center justify-center p-4 transition-all duration-300 ${animarEntrada ? 'bg-slate-950/80 backdrop-blur-md opacity-100' : 'bg-transparent opacity-0'}`}>
       
       {/* Contenedor del Modal - Se ensancha si es el catálogo para que luzcan los productos reales */}
-      <div className={`bg-[#0f172a]/95 border border-white/10 rounded-[3rem] w-full shadow-[0_0_80px_-20px_rgba(6,182,212,0.3)] overflow-hidden relative ${tipo === 'catalogo' ? 'max-w-2xl' : 'max-w-lg'}`}>
+      <div className={`bg-[#0f172a]/95 border border-white/10 rounded-[3rem] w-full shadow-[0_0_80px_-20px_rgba(6,182,212,0.3)] overflow-hidden relative transform transition-all duration-500 ${animarEntrada ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-10 opacity-0'} ${tipo === 'catalogo' ? 'max-w-2xl' : 'max-w-lg'}`}>
         
+        {/* Glow Effects de fondo */}
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-cyan-600/10 blur-[100px] pointer-events-none" />
         <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-amber-600/10 blur-[100px] pointer-events-none" />
 
-        <div className="p-8 md:p-10 relative max-h-[90vh] overflow-y-auto no-scrollbar">
+        <div className="p-8 md:p-10 relative max-h-[90vh] overflow-y-auto no-scrollbar custom-scrollbar">
+          
           <button 
             onClick={alCerrar} 
-            className="absolute top-8 right-8 text-slate-500 hover:text-white p-2 bg-white/5 rounded-full transition-all hover:rotate-90 z-50"
+            className="absolute top-8 right-8 text-slate-500 hover:text-rose-400 p-2 bg-white/5 rounded-full transition-all hover:rotate-90 hover:bg-rose-500/20 z-50"
           >
             <X size={20} />
           </button>
 
-          {/* --- SECCIÓN: REGLAS --- */}
+          {/* ==========================================
+              📖 MODAL: REGLAS DEL JUEGO (REMASTERIZADO)
+              ========================================== */}
           {tipo === 'reglas' && (
-            <div className="space-y-6">
+            <div className="space-y-6 relative z-10">
               <div className="space-y-1">
-                <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter">
+                <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter flex items-center gap-3">
+                  <Info className="text-cyan-400" size={32} /> 
                   Manual <span className="text-cyan-400">Nido</span>
                 </h2>
                 <div className="h-1 w-20 bg-cyan-500 rounded-full" />
+                <p className="text-slate-400 text-xs font-bold tracking-widest mt-2">SISTEMA DE PREDICCIÓN ALADA</p>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { icon: <TrendingUp className="text-cyan-400"/>, label: 'SUBE', mult: 'x1.5' },
-                  { icon: <TrendingDown className="text-rose-500"/>, label: 'BAJA', mult: 'x1.5' },
-                  { icon: <Minus className="text-slate-400"/>, label: 'IGUAL', mult: 'x3.0' }
-                ].map((item, i) => (
-                  <div key={i} className="bg-white/5 p-4 rounded-3xl border border-white/5 flex flex-col items-center">
-                    {item.icon}
-                    <span className="text-[10px] font-black text-slate-500 mt-2">{item.label}</span>
-                    <span className="text-lg font-black text-white">{item.mult}</span>
+
+              {/* Bloque 1: ¿Cómo funciona? */}
+              <div className="bg-slate-800/30 border border-slate-700/50 p-4 rounded-2xl">
+                <h3 className="text-sm font-black text-slate-200 mb-2 flex items-center gap-2">
+                  <Crosshair size={16} className="text-amber-400" /> LA MISIÓN
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  El radar rastrea el vuelo de un ave en tiempo real. Tienes <strong>10 segundos</strong> para analizar la tendencia y predecir hacia dónde se moverá en el próximo impulso. Si aciertas, multiplicas tus plumas.
+                </p>
+              </div>
+
+              {/* Bloque 2: Multiplicadores */}
+              <div>
+                <h3 className="text-sm font-black text-slate-200 mb-3 flex items-center gap-2">
+                  <Target size={16} className="text-emerald-400" /> MULTIPLICADORES DE VUELO
+                </h3>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  {/* Tarjeta Sube */}
+                  <div className="group flex items-center justify-between bg-gradient-to-r from-cyan-950/40 to-transparent border border-cyan-900/50 p-3 rounded-xl hover:border-cyan-500/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-cyan-900/50 rounded-lg group-hover:scale-110 transition-transform">
+                        <TrendingUp size={20} className="text-cyan-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white m-0">SUBE</p>
+                        <p className="text-[10px] text-slate-400 m-0">El ave gana altitud.</p>
+                      </div>
+                    </div>
+                    <div className="bg-cyan-500/20 px-3 py-1 rounded-lg border border-cyan-500/30">
+                      <span className="text-sm font-black text-cyan-400">x1.5</span>
+                    </div>
                   </div>
-                ))}
+
+                  {/* Tarjeta Baja */}
+                  <div className="group flex items-center justify-between bg-gradient-to-r from-rose-950/40 to-transparent border border-rose-900/50 p-3 rounded-xl hover:border-rose-500/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-rose-900/50 rounded-lg group-hover:scale-110 transition-transform">
+                        <TrendingDown size={20} className="text-rose-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white m-0">BAJA</p>
+                        <p className="text-[10px] text-slate-400 m-0">El ave pierde altitud.</p>
+                      </div>
+                    </div>
+                    <div className="bg-rose-500/20 px-3 py-1 rounded-lg border border-rose-500/30">
+                      <span className="text-sm font-black text-rose-400">x1.5</span>
+                    </div>
+                  </div>
+
+                  {/* Tarjeta Igual */}
+                  <div className="group flex items-center justify-between bg-gradient-to-r from-amber-950/40 to-transparent border border-amber-900/50 p-3 rounded-xl hover:border-amber-500/50 transition-colors relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-16 h-full bg-amber-500/5 skew-x-12 animate-pulse"></div>
+                    <div className="flex items-center gap-3 relative z-10">
+                      <div className="p-2 bg-amber-900/50 rounded-lg group-hover:scale-110 transition-transform">
+                        <Minus size={20} className="text-amber-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white m-0">SE MANTIENE</p>
+                        <p className="text-[10px] text-slate-400 m-0 flex items-center gap-1">
+                          <ShieldAlert size={10} className="text-amber-500" /> Vuelo estabilizado (Raro)
+                        </p>
+                      </div>
+                    </div>
+                    <div className="bg-amber-500/20 px-3 py-1 rounded-lg border border-amber-500/30 relative z-10">
+                      <span className="text-sm font-black text-amber-400">x3.0</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <button onClick={alCerrar} className="w-full py-4 bg-white text-slate-950 rounded-2xl font-black uppercase tracking-widest transition-all hover:bg-cyan-400">
-                Entendido
+
+              <button 
+                onClick={alCerrar} 
+                className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white rounded-2xl font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(34,211,238,0.2)] hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] active:scale-[0.98]"
+              >
+                ENTENDIDO, A VOLAR
               </button>
             </div>
           )}
 
-          {/* --- SECCIÓN: BANCO DE PLUMAS (Esta no la tocamos, se queda como te gusta) --- */}
+          {/* ==========================================
+              💰 BANCO DE PLUMAS / RECARGA
+              ========================================== */}
           {(tipo === 'recarga' || tipo === 'banco') && (
-            <div className="space-y-8">
+            <div className="space-y-8 relative z-10">
               <div className="space-y-1">
                 <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter">
                   Banco de <span className="text-amber-400">Plumas</span>
                 </h2>
+                <div className="h-1 w-20 bg-amber-500 rounded-full mb-2" />
                 <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-2">
                   <ShieldCheck size={14} className="text-cyan-500"/> Transacciones Seguras con Stripe
                 </p>
@@ -95,19 +180,22 @@ const VentanasEmergentes = ({ tipo, alCerrar, alComprarPaquete, onComprarPack, p
             </div>
           )}
 
-          {/* --- SECCIÓN: CATÁLOGO DE PREMIOS (Aquí es donde corregimos la función) --- */}
+          {/* ==========================================
+              🛒 CATÁLOGO DE PREMIOS
+              ========================================== */}
           {tipo === 'catalogo' && (
-            <div className="space-y-6">
+            <div className="space-y-6 relative z-10">
                <div className="space-y-1">
                 <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter">
                   Catálogo <span className="text-amber-400">Real</span>
                 </h2>
+                <div className="h-1 w-20 bg-amber-500 rounded-full mb-2" />
                 <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Canjea tus plumas por ejemplares y productos</p>
               </div>
 
               <CatalogoPremios 
                 plumasActuales={plumas} 
-                onComprarPack={manejarCompra} // Pasamos la función para que los paquetes en el catálogo también funcionen
+                onComprarPack={manejarCompra}
               />
             </div>
           )}

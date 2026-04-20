@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Bird, Package, Ticket, ChevronRight, LogOut } from 'lucide-react';
+import { LayoutDashboard, Bird, Package, Ticket, ScanLine, ChevronRight, LogOut } from 'lucide-react'; // 🔥 Importé ScanLine aquí
 
 const BarraLateral = ({ seccion, setSeccion, cerrarSesion, theme }) => {
   return (
@@ -47,6 +47,19 @@ const BarraLateral = ({ seccion, setSeccion, cerrarSesion, theme }) => {
           </div>
           {seccion === 'sorteos' && <ChevronRight size={16} />}
         </button>
+
+        {/* 🔥 NUEVO BOTÓN: ESCÁNER QR */}
+        <button 
+          onClick={() => setSeccion('escaner')}
+          className={`group w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all duration-300 ${seccion === 'escaner' ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-900/40 translate-x-1' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+        >
+          <div className="flex items-center gap-4">
+            <ScanLine size={22} className={seccion === 'escaner' ? 'animate-pulse' : ''}/>
+            <span className="font-semibold text-sm">Validar Entregas (QR)</span>
+          </div>
+          {seccion === 'escaner' && <ChevronRight size={16} />}
+        </button>
+
       </nav>
 
       <div className="p-6 border-t border-slate-800/50">

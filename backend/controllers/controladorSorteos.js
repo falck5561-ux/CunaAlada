@@ -2,11 +2,18 @@ const Sorteo = require('../models/Sorteo');
 const Ave = require('../models/Ave');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// 1. OBTENER SORTEOS (Optimizado para Tabs)
+// 1. OBTENER SORTEOS (Filtrado para clientes / Completo para Admin)
 exports.obtenerSorteos = async (req, res) => {
     try {
-        
-        const sorteos = await Sorteo.find().populate('aveId').sort({ updatedAt: -1 });
+        const { publico } = req.query;
+        let filtro = {};
+
+        // Si se pide para el público, solo mostramos los que tienen visible: true
+        if (publico === 'true') {
+            filtro = { visible: true };
+        }
+
+        const sorteos = await Sorteo.find(filtro).populate('aveId').sort({ updatedAt: -1 });
         
         const sorteosFormateados = sorteos.map(sorteo => {
             const sorteoObj = sorteo.toObject();
@@ -24,7 +31,30 @@ exports.obtenerSorteos = async (req, res) => {
     }
 };
 
-// 2. REVELAR GANADOR (Lógica de privacidad centralizada)
+// 2. CAMBIAR VISIBILIDAD (Ocultar o Mostrar sorteo)
+exports.cambiarVisibilidad = async (req, res) => {
+    try {
+        const sorteo = await Sorteo.findById(req.params.id);
+        if (!sorteo) {
+            return res.status(404).json({ success: false, message: 'Sorteo no encontrado.' });
+        }
+
+        // Cambiamos el estado de visibilidad
+        sorteo.visible = !sorteo.visible;
+        await sorteo.save();
+
+        res.json({ 
+            success: true, 
+            message: sorteo.visible ? 'Sorteo ahora es visible para clientes' : 'Sorteo ocultado de la tienda',
+            visible: sorteo.visible 
+        });
+    } catch (error) {
+        console.error("Error al cambiar visibilidad:", error);
+        res.status(500).json({ error: "Error interno del servidor" });
+    }
+};
+
+// 3. REVELAR GANADOR
 exports.revelarGanador = async (req, res) => {
     try {
         const sorteo = await Sorteo.findById(req.params.id).populate('aveId');
@@ -37,11 +67,9 @@ exports.revelarGanador = async (req, res) => {
             return res.status(400).json({ success: false, message: 'No se puede sortear sin boletos vendidos.' });
         }
 
-        // Elegimos al azar un índice de la lista de boletos vendidos
         const indiceGanador = Math.floor(Math.random() * sorteo.boletosVendidos.length);
         const boletoGanador = sorteo.boletosVendidos[indiceGanador];
         
-        // Actualizamos el estado del sorteo y guardamos ÚNICAMENTE al ganador
         sorteo.estado = 'FINALIZADO';
         sorteo.ganador = {
             nombreCliente: boletoGanador.nombreCliente,
@@ -49,7 +77,6 @@ exports.revelarGanador = async (req, res) => {
             numeroBoleto: boletoGanador.numeroBoleto
         };
 
-        // Actualizamos el estado del Ave vinculada
         if(sorteo.aveId) {
             sorteo.aveId.estado = 'vendido';
             sorteo.aveId.propietario = boletoGanador.nombreCliente;
@@ -64,7 +91,7 @@ exports.revelarGanador = async (req, res) => {
     }
 };
 
-
+// 4. CREAR SORTEO
 exports.crearSorteo = async (req, res) => {
     try {
         const nuevoSorteo = new Sorteo(req.body);
@@ -76,6 +103,7 @@ exports.crearSorteo = async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 };
 
+// 5. ELIMINAR SORTEO
 exports.eliminarSorteo = async (req, res) => {
     try {
         await Sorteo.findByIdAndDelete(req.params.id);
@@ -83,6 +111,7 @@ exports.eliminarSorteo = async (req, res) => {
     } catch (error) { res.status(500).json(error); }
 };
 
+// 6. CREAR INTENCIÓN DE PAGO (STRIPE)
 exports.crearPago = async (req, res) => {
     try {
         const { sorteoId, cantidad = 1, numerosElegidos } = req.body;
@@ -101,6 +130,7 @@ exports.crearPago = async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Error en pago' }); }
 };
 
+// 7. CONFIRMAR COMPRA TRAS PAGO
 exports.confirmarCompra = async (req, res) => {
     try {
         const { nombre, email, telefono, numerosBoletos, idPago } = req.body;

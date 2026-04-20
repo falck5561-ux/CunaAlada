@@ -1,5 +1,7 @@
-import React from 'react';
-import { Edit2, Plus, X, Upload, Image as ImageIcon, Bird, Dna, Hash, Check, Save } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import Cropper from 'react-easy-crop';
+import { Edit2, Plus, X, Upload, Image as ImageIcon, Bird, Dna, Hash, Check, Save, ZoomIn, Scissors } from 'lucide-react';
 
 const FormularioAdmin = ({ 
   seccion, modoEdicion, theme, 
@@ -8,8 +10,117 @@ const FormularioAdmin = ({
   handleFileChange, previewUrl,   
   onSubmit, onCancel, listaAvesDisponibles 
 }) => {
+
+  // --- ESTADOS PARA EL RECORTE DE IMAGEN ---
+  const [imageToCrop, setImageToCrop] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [showCropper, setShowCropper] = useState(false);
+
+  // Bloquear el scroll del fondo cuando el modal esté abierto
+  useEffect(() => {
+    if (showCropper) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [showCropper]);
+
+  // Al seleccionar el archivo, no lo subimos aún, primero lo mostramos para recortar
+  const onSelectFile = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => setImageToCrop(reader.result));
+      reader.readAsDataURL(e.target.files[0]);
+      setShowCropper(true);
+    }
+  };
+
+  const onCropComplete = useCallback((_ , pixels) => {
+    setCroppedAreaPixels(pixels);
+  }, []);
+
+  // Función mágica para procesar el recorte y enviarlo al PanelAdmin
+  const handleCropSave = async () => {
+    try {
+      const croppedImage = await getCroppedImg(imageToCrop, croppedAreaPixels);
+      // Creamos un objeto similar al evento original de input file para no romper tu lógica de PanelAdmin
+      const fakeEvent = {
+        target: {
+          files: [croppedImage]
+        }
+      };
+      handleFileChange(fakeEvent); // Se lo pasamos al padre (PanelAdmin)
+      setShowCropper(false);
+      setImageToCrop(null);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 sticky top-6">
+      
+      {/* ========================================================== */}
+      {/* MODAL DEL RECORTE (Renderizado con portal en el Body)      */}
+      {/* ========================================================== */}
+      {showCropper && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/90 backdrop-blur-md p-4">
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 animate-in zoom-in duration-300">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+              <h4 className="font-black text-slate-800 uppercase tracking-tighter flex items-center gap-2">
+                <Scissors size={20} className="text-emerald-500"/> Ajustar Fotografía
+              </h4>
+              <button onClick={() => setShowCropper(false)} className="text-slate-400 hover:text-slate-600"><X/></button>
+            </div>
+
+            <div className="relative h-80 w-full bg-slate-200">
+              <Cropper
+                image={imageToCrop}
+                crop={crop}
+                zoom={zoom}
+                aspect={3 / 4} // Proporción ideal para tus cartas de aves
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+
+            <div className="p-8 space-y-6">
+              <div className="space-y-3">
+                <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <span>Zoom</span>
+                  <span>{Math.round(zoom * 100)}%</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <ZoomIn size={18} className="text-slate-300" />
+                  <input
+                    type="range"
+                    value={zoom}
+                    min={1} max={3} step={0.1}
+                    onChange={(e) => setZoom(e.target.value)}
+                    className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setShowCropper(false)} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold hover:bg-slate-200 transition-all">
+                  Cancelar
+                </button>
+                <button type="button" onClick={handleCropSave} className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all">
+                  APLICAR RECORTE
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* --- CABECERA --- */}
       <div className="flex justify-between items-center mb-8">
         <h3 className={`font-bold text-xl flex items-center gap-3 text-slate-700`}>
           <span className={`p-2 rounded-lg bg-${theme.main}-50 text-${theme.main}-500`}>
@@ -36,7 +147,7 @@ const FormularioAdmin = ({
                     <input 
                         type="file" 
                         accept="image/*"
-                        onChange={handleFileChange}
+                        onChange={onSelectFile}
                         className="hidden" 
                         id="file-subidaArchivos"
                     />
@@ -46,8 +157,7 @@ const FormularioAdmin = ({
                                 <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     <span className="text-white font-bold text-xs flex items-center gap-2">
-                                        {/* CORRECCIÓN: Aquí estaba el error. Usamos el componente Upload importado arriba */}
-                                        <Upload size={16}/> Cambiar foto
+                                        <Upload size={16}/> Cambiar y ajustar
                                     </span>
                                 </div>
                             </div>
@@ -57,7 +167,7 @@ const FormularioAdmin = ({
                                     <ImageIcon size={24}/>
                                 </div>
                                 <span className="text-sm font-bold text-slate-500">Subir Imagen</span>
-                                <span className="text-[10px] text-slate-400">JPG, PNG o WEBP</span>
+                                <span className="text-[10px] text-slate-400">AJUSTAR AL SUBIR</span>
                             </>
                         )}
                     </label>
@@ -208,5 +318,40 @@ const FormularioAdmin = ({
     </div>
   );
 };
+
+// ============================================================================
+// FUNCIONES AUXILIARES PARA EL RECORTE (Canvas)
+// ============================================================================
+
+async function getCroppedImg(imageSrc, pixelCrop) {
+  const image = await new Promise((resolve, reject) => {
+    const img = new Image();
+    img.addEventListener('load', () => resolve(img));
+    img.addEventListener('error', (error) => reject(error));
+    img.setAttribute('crossOrigin', 'anonymous');
+    img.src = imageSrc;
+  });
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x, pixelCrop.y,
+    pixelCrop.width, pixelCrop.height,
+    0, 0,
+    pixelCrop.width, pixelCrop.height
+  );
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      const file = new File([blob], 'ave_recortada.jpg', { type: 'image/jpeg' });
+      resolve(file);
+    }, 'image/jpeg');
+  });
+}
 
 export default FormularioAdmin;

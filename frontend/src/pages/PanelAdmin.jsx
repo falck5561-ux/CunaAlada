@@ -9,6 +9,7 @@ import FormularioAdmin from '../components/admin/FormularioAdmin';
 import TablaAdmin from '../components/admin/TablaAdmin';
 import DeleteModal from '../components/admin/modals/DeleteModal';
 import ParticipantsModal from '../components/admin/modals/ParticipantsModal';
+import EscanerAdmin from '../components/admin/EscanerAdmin'; 
 
 const PanelAdmin = ({ cerrarSesion, usuario, user }) => {
   const [seccion, setSeccion] = useState('aves');
@@ -156,8 +157,18 @@ const PanelAdmin = ({ cerrarSesion, usuario, user }) => {
     }
   };
 
+  const cambiarVisibilidadSorteo = async (id) => {
+    try {
+        await axios.patch(`${API_URL}/sorteos/${id}/visibilidad`);
+        cargarDatos();
+        showNotificacion('Privacidad del sorteo actualizada');
+    } catch (error) {
+        showNotificacion('Error al cambiar visibilidad', 'error');
+    }
+  };
+
   const revelarGanador = async (id) => {
-    if(!window.confirm("¿Estás seguro de elegir al ganador ahora? Esta acción no se puede deshacer y avisará a los clientes.")) return;
+    if(!window.confirm("¿Estás seguro de elegir al ganador ahora? Esta acción no se puede deshacer.")) return;
     try {
         await axios.post(`${API_URL}/sorteos/${id}/revelar`);
         showNotificacion('¡Tenemos un ganador! La magia ha ocurrido.', 'success');
@@ -169,7 +180,8 @@ const PanelAdmin = ({ cerrarSesion, usuario, user }) => {
 
   const confirmarEliminacionReal = async () => {
       try {
-        const endpoint = seccion === 'aves' ? 'aves' : 'productos';
+        // Detectamos el endpoint según la sección activa
+        const endpoint = seccion === 'aves' ? 'aves' : seccion === 'productos' ? 'productos' : 'sorteos';
         await axios.delete(`${API_URL}/${endpoint}/${modalEliminar.id}`);
         showNotificacion('Registro eliminado correctamente');
         cargarDatos();
@@ -218,14 +230,14 @@ const PanelAdmin = ({ cerrarSesion, usuario, user }) => {
   const colores = {
       aves: { main: 'emerald', grad: 'from-emerald-500 to-teal-500', shadow: 'shadow-emerald-200' },
       productos: { main: 'blue', grad: 'from-blue-500 to-indigo-500', shadow: 'shadow-blue-200' },
-      sorteos: { main: 'violet', grad: 'from-violet-500 to-fuchsia-500', shadow: 'shadow-violet-200' }
+      sorteos: { main: 'violet', grad: 'from-violet-500 to-fuchsia-500', shadow: 'shadow-violet-200' },
+      escaner: { main: 'emerald', grad: 'from-emerald-500 to-teal-500', shadow: 'shadow-emerald-200' }
   };
   const theme = colores[seccion];
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden notranslate" translate="no">
       
-      {/* Modales Flotantes */}
       <DeleteModal 
         show={modalEliminar.show} 
         onClose={() => setModalEliminar({ show: false, id: null })} 
@@ -242,7 +254,6 @@ const PanelAdmin = ({ cerrarSesion, usuario, user }) => {
 
       <Notificacion notificacion={notificacion} />
 
-      {/* BarraLateral */}
       <BarraLateral 
         seccion={seccion} 
         setSeccion={setSeccion} 
@@ -251,7 +262,6 @@ const PanelAdmin = ({ cerrarSesion, usuario, user }) => {
         usuario={usuario || user} 
       />
 
-      {/* Contenido Principal */}
       <main className="flex-1 flex flex-col overflow-hidden relative bg-[#F8F9FC]">
         <EncabezadoEstadisticas 
           seccion={seccion} 
@@ -263,43 +273,50 @@ const PanelAdmin = ({ cerrarSesion, usuario, user }) => {
         />
 
         <div className="flex-1 overflow-auto p-10">
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 items-start">
-            
-            <div className="xl:col-span-4">
-              <FormularioAdmin 
-                seccion={seccion}
-                modoEdicion={modoEdicion}
-                theme={theme}
-                formAve={formAve}
-                formProd={formProd}
-                formSorteo={formSorteo}
-                handleChangeAve={handleChangeAve}
-                handleChangeProd={handleChangeProd}
-                handleChangeSorteo={handleChangeSorteo}
-                handleFileChange={handleFileChange}
-                previewUrl={previewUrl}
-                onSubmit={seccion === 'sorteos' ? guardarSorteo : guardar}
-                onCancel={resetForms}
-                listaAvesDisponibles={listaAvesDisponibles}
-              />
-            </div>
+          
+          {seccion === 'escaner' ? (
+            <EscanerAdmin />
+          ) : (
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 items-start">
+              
+              <div className="xl:col-span-4">
+                <FormularioAdmin 
+                  seccion={seccion}
+                  modoEdicion={modoEdicion}
+                  theme={theme}
+                  formAve={formAve}
+                  formProd={formProd}
+                  formSorteo={formSorteo}
+                  handleChangeAve={handleChangeAve}
+                  handleChangeProd={handleChangeProd}
+                  handleChangeSorteo={handleChangeSorteo}
+                  handleFileChange={handleFileChange}
+                  previewUrl={previewUrl}
+                  onSubmit={seccion === 'sorteos' ? guardarSorteo : guardar}
+                  onCancel={resetForms}
+                  listaAvesDisponibles={listaAvesDisponibles}
+                />
+              </div>
 
-            <div className="xl:col-span-8">
-              <TablaAdmin 
-                seccion={seccion}
-                listaFiltrada={listaFiltrada}
-                filtroEstado={filtroEstado}
-                setFiltroEstado={setFiltroEstado}
-                theme={theme}
-                prepararEdicion={prepararEdicion}
-                abrirModalEliminar={abrirModalEliminar}
-                setModalParticipantes={setModalParticipantes}
-                revelarGanador={revelarGanador}
-                generarLinkRegistro={generarLinkRegistro}
-              />
-            </div>
+              <div className="xl:col-span-8">
+                <TablaAdmin 
+                  seccion={seccion}
+                  listaFiltrada={listaFiltrada}
+                  filtroEstado={filtroEstado}
+                  setFiltroEstado={setFiltroEstado}
+                  theme={theme}
+                  prepararEdicion={prepararEdicion}
+                  abrirModalEliminar={abrirModalEliminar}
+                  setModalParticipantes={setModalParticipantes}
+                  revelarGanador={revelarGanador}
+                  generarLinkRegistro={generarLinkRegistro}
+                  cambiarVisibilidadSorteo={cambiarVisibilidadSorteo} // 🔥 PASAMOS LA NUEVA FUNCIÓN
+                />
+              </div>
 
-          </div>
+            </div>
+          )}
+
         </div>
       </main>
 
@@ -317,8 +334,8 @@ const PanelAdmin = ({ cerrarSesion, usuario, user }) => {
         }
         .input-modern:focus {
           background-color: #ffffff;
-          border-color: ${seccion === 'aves' ? '#10b981' : seccion === 'productos' ? '#3b82f6' : '#8b5cf6'};
-          box-shadow: 0 4px 12px ${seccion === 'aves' ? 'rgba(16, 185, 129, 0.1)' : seccion === 'productos' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(139, 92, 246, 0.1)'};
+          border-color: ${seccion === 'aves' ? '#10b981' : seccion === 'productos' ? '#3b82f6' : seccion === 'sorteos' ? '#8b5cf6' : '#10b981'};
+          box-shadow: 0 4px 12px ${seccion === 'aves' ? 'rgba(16, 185, 129, 0.1)' : seccion === 'productos' ? 'rgba(59, 130, 246, 0.1)' : seccion === 'sorteos' ? 'rgba(139, 92, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)'};
         }
         .input-modern::placeholder { color: #94a3b8; }
         

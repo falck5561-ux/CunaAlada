@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config/api';
 
-const useJuegoNido = (setUsuarioGlobal) => {
+// 🔥 NUEVO: Ahora el hook recibe el "socket" como segundo parámetro
+const useJuegoNido = (setUsuarioGlobal, socket) => {
   // --- 1. ESTADOS DE LA ECONOMÍA (Sincronizados con la App) ---
   const [plumas, setPlumas] = useState(() => {
     // Leemos directamente del objeto de usuario global
@@ -128,7 +129,18 @@ const useJuegoNido = (setUsuarioGlobal) => {
         const nuevoSaldo = plumas + ultimoResultado.ganancia;
         setPlumas(nuevoSaldo);
         setMensaje({ texto: `¡ACERTASTE! GANASTE ${ultimoResultado.ganancia} 🪶`, tipo: 'exito' });
-        sincronizarTodo(nuevoSaldo); // 🚩 Sincronizamos Ganancia
+        sincronizarTodo(nuevoSaldo); // Sincronizamos Ganancia
+
+        // 🔥 NUEVO: AVISAR AL CHAT EN VIVO QUE ALGUIEN GANÓ
+        if (socket) {
+          const userLocal = JSON.parse(localStorage.getItem('cuna_usuario'));
+          socket.emit('jugador_gano', {
+            nombre: userLocal ? userLocal.nombre.split(' ')[0] : 'Aviador', // Solo el primer nombre
+            ganancia: ultimoResultado.ganancia,
+            jugada: prediccionRef.current
+          });
+        }
+
       } else if (prediccionRef.current) {
         setMensaje({ texto: 'RUMBO EQUIVOCADO. PREDICCIÓN FALLIDA.', tipo: 'error' });
       }
@@ -162,7 +174,7 @@ const useJuegoNido = (setUsuarioGlobal) => {
     prediccionRef.current = seleccion;
     apuestaRef.current = monto;
 
-    // 2. 🔥 Sincronizamos la resta inmediatamente (Header y DB)
+    // 2. Sincronizamos la resta inmediatamente (Header y DB)
     sincronizarTodo(nuevoSaldo); 
 
     setMensaje({ texto: `PREDICCIÓN FIJADA: ${seleccion.toUpperCase()}`, tipo: 'exito' });

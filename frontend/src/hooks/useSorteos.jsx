@@ -11,31 +11,25 @@ export const useSorteos = () => {
     const [datosCliente, setDatosCliente] = useState({ nombre: '', email: '', telefono: '' });
     const [mensajeExito, setMensajeExito] = useState(null);
 
-    
+    // Aquí puedes poner el email del usuario logueado si lo tienes en el context
     const emailUsuarioActual = "josueponcearch@gmail.com"; 
 
     const cargarSorteos = async () => {
         try {
-            // 2. Usamos la variable y quitamos la URL fija de Render
-            const res = await axios.get(`${API_URL}/sorteos`);
+            // 🔥 CAMBIO CLAVE: Agregamos ?publico=true a la URL.
+            // Esto le avisa al backend que solo queremos los sorteos que NO están ocultos.
+            const res = await axios.get(`${API_URL}/sorteos?publico=true`);
             
             if (res.data && res.data.length > 0) {
                 setSorteos(res.data);
             } else {
-                // Datos de prueba si la base está vacía
-                setSorteos([{
-                    _id: 'demo-1',
-                    premio: 'Agapornis Fisher - Mutación Arlequín Azul',
-                    descripcion: 'Hermoso ejemplar papillero de 25 días. Criado a mano, dócil y con excelente genética.',
-                    fotoUrl: '/portada.png', 
-                    precioBoleto: 150,
-                    totalBoletos: 50,
-                    boletosVendidos: [], 
-                    estado: 'ACTIVO'
-                }]);
+                // Si la base de datos responde vacío o no hay visibles, 
+                // puedes dejar la lista vacía o poner el demo.
+                setSorteos([]);
             }
         } catch (error) {
             console.error("Error al cargar sorteos:", error);
+            // Si hay un error, dejamos la lista como estaba para no romper la UI
         } finally {
             setLoading(false);
         }
@@ -43,6 +37,7 @@ export const useSorteos = () => {
 
     useEffect(() => {
         cargarSorteos();
+        // Polling: revisa cada 10 segundos si hay nuevos boletos vendidos o nuevos sorteos
         const interval = setInterval(cargarSorteos, 10000); 
         return () => clearInterval(interval);
     }, []);
@@ -63,7 +58,7 @@ export const useSorteos = () => {
     const handlePagoExitoso = (boletosComprados) => {
         setMensajeExito(boletosComprados);
         setModalCompra({ show: false, sorteo: null });
-        cargarSorteos(); 
+        cargarSorteos(); // Recargamos para que se vean los nuevos boletos ocupados
     };
 
     return {

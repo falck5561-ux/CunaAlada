@@ -9,17 +9,29 @@ const SorteoSchema = new mongoose.Schema({
     },
     
     // 2. DATOS DEL EVENTO
-    titulo: { type: String, required: true },
-    descripcion: { type: String },
-    precioBoleto: { type: Number, required: true },
-    totalBoletos: { type: Number, required: true, default: 50 },
+    titulo: { 
+        type: String, 
+        required: true 
+    },
+    descripcion: { 
+        type: String 
+    },
+    precioBoleto: { 
+        type: Number, 
+        required: true 
+    },
+    totalBoletos: { 
+        type: Number, 
+        required: true, 
+        default: 50 
+    },
     
     // 3. MOTOR DE TICKETS
     boletosVendidos: [{
-        usuarioEmail: String,      // Para que el cliente vea "Sus Boletos" al iniciar sesión
+        usuarioEmail: String,      // Para que el cliente vea "Sus Boletos"
         nombreCliente: String,
         telefonoCliente: String,
-        numeroBoleto: Number,      // Su número de la suerte (ej. Ticket #12)
+        numeroBoleto: Number,      // Su número de la suerte
         fechaCompra: { type: Date, default: Date.now },
         idPagoStripe: String       // El recibo de pago seguro
     }],
@@ -31,15 +43,26 @@ const SorteoSchema = new mongoose.Schema({
         default: 'ACTIVO' 
     },
     
-    // 5. LA CUENTA REGRESIVA
-    fechaSorteoPlaneada: { type: Date }, // Se establece cuando se compra el último boleto
+    // 5. CONTROL DE VISIBILIDAD (Nueva implementación)
+    // Sirve para ocultar sorteos finalizados de la vista de los clientes
+    visible: { 
+        type: Boolean, 
+        default: true 
+    },
     
-    // 6. EL GRAN GANADOR
+    // 6. LA CUENTA REGRESIVA
+    fechaSorteoPlaneada: { 
+        type: Date 
+    }, // Se establece cuando se llena el sorteo
+    
+    // 7. EL GRAN GANADOR
     ganador: {
         nombreCliente: String,
         usuarioEmail: String,
         numeroBoleto: Number
     }
-}, { timestamps: true });
+}, { 
+    timestamps: true // Crea automáticamente createdAt y updatedAt
+});
 
 module.exports = mongoose.model('Sorteo', SorteoSchema);
