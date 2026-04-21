@@ -15,7 +15,7 @@ const rutasAdopcion = require('./routes/rutasAdopcion');
 const rutasBilletera = require('./routes/rutasBilletera');
 const rutasCanjes = require('./routes/rutasCanjes');
 const rutasUsuarios = require('./routes/rutasUsuarios'); 
-
+const pedidoTiendaRoutes = require('./routes/pedidoTiendaRoutes');
 // --- 2. INICIALIZACIÓN ---
 const app = express();
 const server = http.createServer(app); // 👈 Envolvemos Express en un servidor HTTP
@@ -75,7 +75,7 @@ app.use('/api/adopcion', rutasAdopcion);
 app.use('/api/billetera', rutasBilletera);
 app.use('/api/canjes', rutasCanjes); 
 app.use('/api/usuarios', rutasUsuarios); 
-
+app.use('/api/pedidos-tienda', pedidoTiendaRoutes);
 app.use((req, res) => {
     res.status(404).json({ message: "Ruta no encontrada en el Aviario" });
 });

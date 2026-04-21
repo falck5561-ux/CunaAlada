@@ -1,5 +1,6 @@
 const Ave = require('../models/Ave');
 const Canje = require('../models/Canje'); 
+const Usuario = require('../models/Usuario'); 
 const { v4: uuidv4 } = require('uuid');
 
 const manejarError = (res, error, mensaje) => {
@@ -59,40 +60,77 @@ exports.eliminarAve = async (req, res) => {
 
 /**
  * 5. CANJEAR AVE (Pestaña Tienda)
- * Aquí aseguramos que el nombre del usuario sea exactamente el mismo que en el Frontend
+ * VERSIÓN FINAL: Bloquea saldos negativos y asegura el cobro.
  */
 exports.canjearAve = async (req, res) => {
     try {
-        const { usuarioNombre } = req.body; // Debe ser "Josué Pérez Ponce"
+        const { usuarioNombre, costoTotal } = req.body; 
 
+        // --- PASO 1: INTENTAR COBRAR AL USUARIO (CON FILTRO DE SALDO) ---
+        const usuarioActualizado = await Usuario.findOneAndUpdate(
+            { 
+                nombre: usuarioNombre.trim(),
+                plumas: { $gte: costoTotal } // 🔥 CANDADO: Solo si tiene suficiente saldo
+            },
+            { $inc: { plumas: -costoTotal } }, 
+            { new: true }
+        );
+
+        // Si no se encuentra al usuario O no tiene saldo suficiente
+        if (!usuarioActualizado) {
+            console.error(`❌ INTENTO DE COMPRA FALLIDO: "${usuarioNombre}" no tiene saldo o no existe.`);
+            return res.status(400).json({ 
+                success: false, 
+                error: "Saldo insuficiente o usuario no encontrado. ¡Necesitas más plumas! 🪶" 
+            });
+        }
+
+        // --- PASO 2: ACTUALIZAR EL ESTADO DE LA AVE ---
         const ave = await Ave.findOneAndUpdate(
             { _id: req.params.id, estado: 'disponible' },
             { 
                 estado: 'vendido', 
-                propietario: usuarioNombre, 
+                propietario: usuarioNombre.trim(), 
                 fechaVenta: new Date() 
             },
             { new: true }
         );
 
-        if (!ave) return res.status(404).json({ error: "Ave no disponible" });
+        // Si el ave ya no está disponible (Rollback: devolvemos las plumas)
+        if (!ave) {
+            await Usuario.findOneAndUpdate(
+                { nombre: usuarioNombre.trim() },
+                { $inc: { plumas: costoTotal } }
+            );
+            return res.status(404).json({ 
+                success: false, 
+                error: "El ejemplar ya no está disponible. Tus plumas han sido devueltas." 
+            });
+        }
 
-        // 🔥 TICKET PARA "MIS PREMIOS"
+        // --- PASO 3: REGISTRAR EL TICKET DE CANJE ---
         const nuevoCanje = new Canje({
-            usuarioNombre: usuarioNombre, // Se guarda como "Josué Pérez Ponce"
+            usuarioNombre: usuarioNombre.trim(),
             itemNombre: `${ave.especie} ${ave.mutacion || ''}`.trim(),
-            itemImagen: ave.fotoUrl, // <--- REVISA: Que el frontend use 'itemImagen'
+            itemImagen: ave.fotoUrl,
             cantidad: 1,
             tipo: 'ave',
             itemId: ave._id
         });
 
         await nuevoCanje.save();
-        console.log(`✅ Canje de Ave guardado para: ${usuarioNombre}`);
+        
+        console.log(`✅ COMPRA EXITOSA: ${usuarioNombre} adquirió un ave por ${costoTotal} 🪶. Saldo restante: ${usuarioActualizado.plumas}`);
 
-        res.json({ success: true, ave, canje: nuevoCanje });
+        res.json({ 
+            success: true, 
+            ave, 
+            canje: nuevoCanje,
+            nuevoSaldo: usuarioActualizado.plumas 
+        });
+
     } catch (error) {
-        manejarError(res, error, "Error en el canje de ave");
+        manejarError(res, error, "Error crítico en el canje de ave");
     }
 };
 
@@ -129,7 +167,6 @@ exports.confirmarAdopcion = async (req, res) => {
             { new: true }
         );
 
-        // 🔥 REGISTRO EN HISTORIAL
         const nuevoCanje = new Canje({
             usuarioNombre: propietario, 
             itemNombre: `${ave.especie} ${ave.mutacion || ''}`.trim(),

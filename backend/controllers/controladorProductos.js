@@ -1,5 +1,6 @@
 const Producto = require('../models/Producto');
 const Canje = require('../models/Canje'); 
+const Usuario = require('../models/Usuario'); 
 
 // 1. Obtener todos los productos
 exports.obtenerProductos = async (req, res) => {
@@ -49,13 +50,36 @@ exports.eliminarProducto = async (req, res) => {
     }
 };
 
-
+/**
+ * 5. CANJEAR PRODUCTO (Pestaña Tienda)
+ * VERSIÓN BLINDADA v2: Bloquea saldos negativos y asegura stock.
+ */
 exports.canjearProducto = async (req, res) => {
     try {
-        const { usuarioNombre, cantidad } = req.body;
+        const { usuarioNombre, cantidad, costoTotal } = req.body;
         const cantidadARestar = parseInt(cantidad) || 1;
 
-        // A. Buscamos y actualizamos el stock del producto
+        // --- PASO 1: INTENTAR COBRAR AL USUARIO (CON FILTRO DE SALDO) ---
+        // Buscamos al usuario pero SOLO si tiene más o igual plumas que el costoTotal
+        const usuarioActualizado = await Usuario.findOneAndUpdate(
+            { 
+                nombre: usuarioNombre.trim(),
+                plumas: { $gte: costoTotal } // 🔥 CANDADO: Evita el saldo negativo
+            },
+            { $inc: { plumas: -costoTotal } }, 
+            { new: true }
+        );
+
+        // Si no se encuentra al usuario O no tiene saldo suficiente
+        if (!usuarioActualizado) {
+            console.error(`❌ INTENTO DE COBRO FALLIDO: "${usuarioNombre}" no existe o no tiene saldo suficiente.`);
+            return res.status(400).json({ 
+                success: false, 
+                error: "Saldo insuficiente o usuario no encontrado. ¡Necesitas más plumas! 🪶" 
+            });
+        }
+
+        // --- PASO 2: ACTUALIZAR STOCK DEL PRODUCTO ---
         const producto = await Producto.findOneAndUpdate(
             { 
                 _id: req.params.id, 
@@ -67,16 +91,21 @@ exports.canjearProducto = async (req, res) => {
             { new: true }
         );
 
+        // Si no hay stock, devolvemos las plumas al usuario (Rollback manual)
         if (!producto) {
+            await Usuario.findOneAndUpdate(
+                { nombre: usuarioNombre.trim() },
+                { $inc: { plumas: costoTotal } }
+            );
             return res.status(400).json({ 
-                error: "No hay suficiente stock para la cantidad solicitada" 
+                success: false,
+                error: "No hay suficiente stock para la cantidad solicitada. Tus plumas han sido devueltas." 
             });
         }
 
-        // B. CREAMOS EL REGISTRO EN LA COLECCIÓN DE CANJES
-        // Esto es lo que aparecerá en "Mis Premios" aunque el stock se acabe
+        // --- PASO 3: REGISTRAR EL CANJE ---
         const nuevoCanje = new Canje({
-            usuarioNombre: usuarioNombre,
+            usuarioNombre: usuarioNombre.trim(),
             itemId: producto._id,
             itemNombre: producto.nombre,
             itemImagen: producto.fotoUrl,
@@ -86,14 +115,18 @@ exports.canjearProducto = async (req, res) => {
 
         await nuevoCanje.save();
 
+        // Log en terminal para confirmación real
+        console.log(`✅ COMPRA EXITOSA: ${usuarioNombre} canjeó ${producto.nombre} por ${costoTotal} 🪶. Saldo restante: ${usuarioActualizado.plumas}`);
+
         res.json({ 
             success: true, 
-            message: "Canje registrado en tu historial",
-            canje: nuevoCanje 
+            message: "¡Canje exitoso! Plumas descontadas.",
+            canje: nuevoCanje,
+            nuevoSaldo: usuarioActualizado.plumas
         });
 
     } catch (error) {
-        console.error("Error en canje con persistencia:", error);
-        res.status(500).json({ error: "Error interno del servidor" });
+        console.error("Error crítico en el proceso de canje:", error);
+        res.status(500).json({ success: false, error: "Error interno del servidor" });
     }
 };

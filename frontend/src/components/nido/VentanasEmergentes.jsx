@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, TrendingUp, TrendingDown, Minus, Info, 
   Zap, ShieldAlert, Crosshair, Target, Feather,
@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import CatalogoPremios from './CatalogoPremios'; 
 
-const VentanasEmergentes = ({ tipo, alCerrar, alComprarPaquete, onComprarPack, plumas }) => {
+// 🔥 RECIBIMOS setPlumasActuales EN LAS PROPS
+const VentanasEmergentes = ({ tipo, alCerrar, alComprarPaquete, onComprarPack, plumas, setPlumasActuales }) => {
   const [animarEntrada, setAnimarEntrada] = useState(false);
 
   // Efecto suave al abrir cualquier modal
@@ -193,8 +194,10 @@ const VentanasEmergentes = ({ tipo, alCerrar, alComprarPaquete, onComprarPack, p
                 <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Canjea tus plumas por ejemplares y productos</p>
               </div>
 
+              {/* 🔥 AQUÍ CONECTAMOS LA MANGUERA AL COMPONENTE */}
               <CatalogoPremios 
                 plumasActuales={plumas} 
+                setPlumasActuales={setPlumasActuales} 
                 onComprarPack={manejarCompra}
               />
             </div>

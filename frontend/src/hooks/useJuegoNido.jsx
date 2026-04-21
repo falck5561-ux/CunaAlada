@@ -181,9 +181,20 @@ const useJuegoNido = (setUsuarioGlobal, socket) => {
   };
 
   return {
-    plumas, apuesta, setApuesta, prediccion, fase, tiempoRestante, 
-    mensaje, historial, altitudes, progresoVuelo, progresoPan, 
-    ultimoResultado, colocarApuesta
+    plumas, 
+    setPlumas, // 🔥 ¡AQUÍ ESTÁ LA MAGIA! Ahora el componente padre puede modificar las plumas
+    apuesta, 
+    setApuesta, 
+    prediccion, 
+    fase, 
+    tiempoRestante, 
+    mensaje, 
+    historial, 
+    altitudes, 
+    progresoVuelo, 
+    progresoPan, 
+    ultimoResultado, 
+    colocarApuesta
   };
 };
 

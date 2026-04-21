@@ -18,7 +18,7 @@ import BotonWhatsApp from './components/BotonWhatsApp';
 // Iconos
 import { 
   Bird, ShoppingBag, Home, Menu, X, ShieldCheck, BookOpen,
-  LogOut, User, Zap 
+  LogOut, User, Gift, Flame
 } from 'lucide-react';
 
 // ============================================================================
@@ -38,35 +38,34 @@ const MenuNavegacion = ({ usuario, cerrarSesion, menuMovilAbierto, setMenuMovilA
     { to: "/", label: "Inicio", icon: <Home size={18}/> },
     { to: "/aves", label: "Ejemplares", icon: <Bird size={18}/> },
     { to: "/tienda", label: "Tienda", icon: <ShoppingBag size={18}/> },
-    { to: "/sorteos", label: "Sorteos", icon: <Zap size={18}/> },
-    { to: "/nido-riesgo", label: "Nido del Riesgo", icon: <Zap size={18}/> }, 
+    { to: "/sorteos", label: "Sorteos", icon: <Gift size={18}/> },
+    { to: "/nido-riesgo", label: "Nido de Riesgo", icon: <Flame size={18}/> }, 
     { to: "/cuidados", label: "Academia", icon: <BookOpen size={18}/> }
   ];
 
   return (
     <>
-      {/* SECCIÓN PC INTACTA - Solo se añaden reglas ocultas (hidden lg:flex) para el celular */}
       <nav className="fixed top-0 w-full z-[100] px-4 md:px-6 py-4 md:py-6 transition-all">
-        <div className="container mx-auto h-20 glass rounded-3xl flex items-center px-6 md:px-10 shadow-2xl border border-white/20">
+        <div className="container mx-auto h-20 bg-white/70 backdrop-blur-xl rounded-[2rem] flex items-center px-4 md:px-8 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-white/50">
           
           {/* LOGO */}
-          <Link to="/" className="flex items-center gap-4 group no-underline mr-8" onClick={() => setMenuMovilAbierto(false)}>
-            <img src="/icono.png" alt="Logo" className="h-10 md:h-12 w-auto transition-transform group-hover:scale-110 duration-300" />
+          <Link to="/" className="flex items-center gap-3 group no-underline mr-8" onClick={() => setMenuMovilAbierto(false)}>
+            <img src="/icono.png" alt="Logo" className="h-10 md:h-12 w-auto transition-transform group-hover:scale-110 duration-500 drop-shadow-sm" />
             <span className="hidden sm:block text-xl md:text-2xl font-black text-slate-900 tracking-tighter uppercase">
-              Cuna<span className="text-emerald-500">Alada</span>
+              Cuna<span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-emerald-400">Alada</span>
             </span>
           </Link>
           
           {/* ENLACES CENTRALES */}
-          <div className="hidden lg:flex items-center justify-center flex-grow gap-2 xl:gap-6">
+          <div className="hidden xl:flex items-center justify-center flex-grow gap-1">
             {enlaces.map((item) => (
               <Link 
                 key={item.to} 
                 to={item.to} 
-                className={`text-[13px] font-bold no-underline transition-all flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap ${
+                className={`text-[11px] font-black uppercase tracking-widest no-underline transition-all duration-300 flex items-center gap-2 px-4 py-2.5 rounded-2xl whitespace-nowrap ${
                   location.pathname === item.to 
-                  ? 'text-emerald-600 bg-emerald-50 shadow-sm' 
-                  : 'text-slate-500 hover:text-emerald-500 hover:bg-slate-50'
+                  ? 'text-emerald-700 bg-emerald-50 border border-emerald-100/50 shadow-sm' 
+                  : 'text-slate-500 hover:text-emerald-600 hover:bg-slate-50'
                 }`}
               >
                 {item.icon} {item.label}
@@ -74,93 +73,89 @@ const MenuNavegacion = ({ usuario, cerrarSesion, menuMovilAbierto, setMenuMovilA
             ))}
           </div>
 
-          {/* SECCIÓN DERECHA (Usuario / Admin) - ml-auto solo empuja en móvil, lg:ml-4 respeta PC */}
-          <div className="flex items-center gap-4 ml-auto lg:ml-4">
-            <div className="hidden lg:block w-px h-6 bg-slate-200 mx-2" />
+          {/* SECCIÓN DERECHA */}
+          <div className="flex items-center gap-4 ml-auto xl:ml-4">
+            <div className="hidden xl:block w-px h-8 bg-slate-200 mx-2" />
 
             {usuario ? (
-              // hidden lg:flex oculta esta píldora en celular para no amontonar, pero se queda idéntica en PC
-              <div className="hidden lg:flex items-center gap-3">
-                <div className="flex items-center gap-3 bg-white/80 border border-slate-200 py-1.5 pl-1.5 pr-4 rounded-full shadow-sm">
-                  <img src={usuario.foto} alt="User" className="w-8 h-8 rounded-full border-2 border-emerald-500 object-cover" />
-                  <div className="hidden xl:flex flex-col">
-                    <span className="text-[9px] font-black text-slate-400 uppercase leading-none mb-1">Aviador</span>
-                    <span className="text-xs font-bold text-slate-800 leading-none truncate max-w-[70px]">{usuario.nombre.split(' ')[0]}</span>
+              <div className="flex items-center gap-3">
+                <div className="hidden lg:flex items-center gap-3 bg-white/90 border border-slate-100 py-1.5 pl-1.5 pr-4 rounded-full shadow-sm">
+                  <img src={usuario.foto} alt="User" className="w-9 h-9 rounded-full border-2 border-emerald-400 object-cover" />
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Aviador</span>
+                    <span className="text-xs font-black text-slate-800 leading-none truncate max-w-[80px]">{usuario.nombre.split(' ')[0]}</span>
                   </div>
                   
-                  <div className="bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full flex items-center gap-1 border border-emerald-200">
-                    <span className="text-[10px] font-black">{usuario.plumas || 0}</span>
-                    <span className="text-xs">🪶</span>
+                  <div className="bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-emerald-200/60 shadow-inner ml-2">
+                    <span className="text-[11px] font-black tracking-tighter">{usuario.plumas || 0}</span>
+                    <span className="text-sm">🪶</span>
                   </div>
 
-                  <button onClick={cerrarSesion} className="ml-1 p-1.5 text-rose-500 hover:bg-rose-50 rounded-full transition-colors">
-                    <LogOut size={16} />
+                  <button onClick={cerrarSesion} className="ml-1 p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-all">
+                    <LogOut size={16} strokeWidth={2.5} />
                   </button>
                 </div>
+
                 {usuario.rol === 'admin' && (
-                   <Link to="/admin" className="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-emerald-600 transition-all shadow-lg">
-                      <ShieldCheck size={18} />
+                   <Link to="/admin" className="p-3 bg-slate-900 text-white rounded-2xl hover:bg-emerald-500 transition-all shadow-lg active:scale-95">
+                      <ShieldCheck size={20} />
                    </Link>
                 )}
               </div>
             ) : (
-              // Igual aquí, se oculta en celular, intacto en PC
-              <Link to="/admin" className="hidden lg:flex px-6 py-3 rounded-2xl text-xs font-black no-underline transition-all bg-slate-900 text-white hover:bg-emerald-600 items-center gap-2">
-                <User size={14} /> ENTRAR
+              <Link to="/admin" className="hidden lg:flex px-6 py-3.5 rounded-[1.5rem] text-[11px] font-black tracking-widest no-underline transition-all bg-slate-900 text-white hover:bg-emerald-500 shadow-lg active:scale-95 items-center gap-2 uppercase">
+                <User size={16} /> ENTRAR
               </Link>
             )}
 
-            {/* Botón Móvil (Hamburguesa) - Original */}
-            <button className="lg:hidden p-3 bg-slate-100 rounded-2xl text-slate-900" onClick={() => setMenuMovilAbierto(true)}>
+            <button className="xl:hidden p-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 active:scale-90 shadow-sm" onClick={() => setMenuMovilAbierto(true)}>
               <Menu size={24}/>
             </button>
           </div>
         </div>
       </nav>
 
-      {/* MENU MÓVIL (Con scroll interno por si hay muchos items) */}
-      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[105] transition-opacity duration-300 lg:hidden ${menuMovilAbierto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setMenuMovilAbierto(false)} />
+      {/* MENU MÓVIL */}
+      <div className={`fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[105] transition-opacity duration-300 xl:hidden ${menuMovilAbierto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setMenuMovilAbierto(false)} />
       
-      <div className={`fixed top-0 right-0 h-full w-[85%] max-w-sm bg-slate-900 z-[110] transform transition-transform duration-500 lg:hidden flex flex-col p-8 justify-between overflow-y-auto ${menuMovilAbierto ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed top-0 right-0 h-full w-[85%] max-w-sm bg-slate-900 z-[110] transform transition-transform duration-500 xl:hidden flex flex-col p-8 justify-between overflow-y-auto ${menuMovilAbierto ? 'translate-x-0' : 'translate-x-full'}`}>
         <div>
-           <div className="flex justify-between items-center mb-12">
+           <div className="flex justify-between items-center mb-10">
              <span className="text-2xl font-black text-white tracking-tighter uppercase">Cuna<span className="text-emerald-400">Alada</span></span>
-             <button onClick={() => setMenuMovilAbierto(false)} className="p-3 bg-white/10 rounded-full text-white">
+             <button onClick={() => setMenuMovilAbierto(false)} className="p-3 bg-white/5 rounded-full text-slate-300">
                 <X size={20}/>
              </button>
            </div>
            
-           <div className="flex flex-col gap-4">
+           <div className="flex flex-col gap-2">
               {usuario && (
-                <div className="flex items-center gap-4 mb-6 p-4 bg-white/5 rounded-2xl border border-white/10">
-                  <img src={usuario.foto} alt="Me" className="w-14 h-14 rounded-full border-2 border-emerald-400 object-cover" />
-                  <div className="overflow-hidden">
-                    <p className="text-white font-bold m-0 truncate">{usuario.nombre}</p>
-                    <p className="text-emerald-400 text-xs font-bold uppercase m-0 mt-1">{usuario.plumas || 0} PLUMAS 🪶</p>
+                <div className="flex items-center gap-4 mb-8 p-5 bg-white/5 rounded-[2rem] border border-white/10">
+                  <img src={usuario.foto} alt="Me" className="w-14 h-14 rounded-full border-2 border-emerald-400 object-cover shadow-lg" />
+                  <div>
+                    <p className="text-white font-black text-lg m-0 truncate mb-1">{usuario.nombre.split(' ')[0]}</p>
+                    <div className="bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                      {usuario.plumas || 0} PLUMAS 🪶
+                    </div>
                   </div>
                 </div>
               )}
+              
               {enlaces.map((item, i) => (
-                <Link key={i} to={item.to} onClick={() => setMenuMovilAbierto(false)} className="flex items-center gap-4 text-xl font-bold text-slate-300 no-underline hover:text-white py-2">
-                  <span className="text-emerald-500/50">{item.icon}</span>{item.label}
+                <Link key={i} to={item.to} onClick={() => setMenuMovilAbierto(false)} className="flex items-center gap-4 text-sm font-black uppercase tracking-widest text-slate-400 no-underline hover:text-white p-4 rounded-2xl transition-all">
+                  <span className="text-emerald-500/70">{item.icon}</span>{item.label}
                 </Link>
               ))}
-              {usuario?.rol === 'admin' && (
-                <Link to="/admin" onClick={() => setMenuMovilAbierto(false)} className="flex items-center gap-4 text-xl font-bold text-emerald-400 no-underline hover:text-emerald-300 py-2 mt-4 border-t border-white/10 pt-4">
-                  <ShieldCheck size={18}/> Panel Admin
-                </Link>
-              )}
-            </div>
+           </div>
         </div>
 
-        <div className="space-y-4 mt-8">
+        <div className="mt-8">
            {usuario ? (
-             <button onClick={cerrarSesion} className="w-full py-5 bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-2xl font-black flex items-center justify-center gap-3">
-               <LogOut size={20} /> CERRAR SESIÓN
+             <button onClick={cerrarSesion} className="w-full py-5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-[1.5rem] text-[11px] tracking-widest font-black uppercase flex items-center justify-center gap-3">
+               <LogOut size={18} /> CERRAR SESIÓN
              </button>
            ) : (
-             <Link to="/admin" onClick={() => setMenuMovilAbierto(false)} className="w-full py-5 bg-emerald-600 rounded-2xl text-center font-black text-white text-lg no-underline shadow-lg block">
-               ACCESO
+             <Link to="/admin" onClick={() => setMenuMovilAbierto(false)} className="w-full py-5 bg-emerald-500 rounded-[1.5rem] text-center font-black tracking-widest text-slate-900 text-[11px] uppercase no-underline shadow-lg flex items-center justify-center gap-2">
+               <User size={16} /> ACCESO
              </Link>
            )}
         </div>
@@ -169,22 +164,21 @@ const MenuNavegacion = ({ usuario, cerrarSesion, menuMovilAbierto, setMenuMovilA
   );
 };
 
-// FOOTER 100% ORIGINAL - Sin modificaciones
 const FooterPrincipal = () => (
-  <footer className="bg-slate-900 text-white pt-20 pb-10 rounded-t-[40px] md:rounded-t-[80px] relative mt-20 border-t border-emerald-900/50">
+  <footer className="bg-slate-900 text-white pt-20 pb-10 rounded-t-[3rem] md:rounded-t-[5rem] relative mt-20 border-t-[12px] border-emerald-500">
     <div className="container mx-auto px-8 md:px-12">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
         <div className="lg:col-span-5 space-y-6">
-          <div className="flex items-center justify-center md:justify-start gap-3">
-              <img src="/icono.png" alt="Logo" className="h-10 w-auto opacity-90" />
-              <h3 className="text-3xl font-black m-0 tracking-tighter text-white uppercase">Cuna<span className="text-emerald-500">Alada</span></h3>
+          <div className="flex items-center justify-center md:justify-start gap-4">
+              <img src="/icono.png" alt="Logo" className="h-12 w-auto opacity-90 drop-shadow-md" />
+              <h3 className="text-3xl font-black m-0 tracking-tighter text-white uppercase">Cuna<span className="text-emerald-400">Alada</span></h3>
           </div>
-          <p className="text-slate-400 text-base leading-relaxed max-w-sm mx-auto md:mx-0">
-            Dedicados a la crianza responsable y amorosa de aves en Campeche.
+          <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-sm mx-auto md:mx-0">
+            Dedicados a la crianza responsable y amorosa de aves exóticas en el Estado de Campeche, México.
           </p>
         </div>
       </div>
-      <div className="border-t border-white/5 pt-8 text-center text-slate-500 text-[11px] font-bold uppercase tracking-widest">
+      <div className="border-t border-white/10 pt-8 text-center text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">
         © {new Date().getFullYear()} CUNA ALADA • CAMPECHE
       </div>
     </div>
@@ -205,6 +199,15 @@ const AppContent = () => {
     setAutorizado(!!localStorage.getItem('adminToken'));
   }, []); 
 
+  const actualizarPlumasGlobal = (nuevasPlumas) => {
+    setUsuario(prev => {
+      if (!prev) return null;
+      const usuarioActualizado = { ...prev, plumas: nuevasPlumas };
+      localStorage.setItem('cuna_usuario', JSON.stringify(usuarioActualizado));
+      return usuarioActualizado;
+    });
+  };
+
   const cerrarSesion = () => {
     localStorage.clear();
     setAutorizado(false);
@@ -215,8 +218,7 @@ const AppContent = () => {
   const esPaginaPrivada = location.pathname.startsWith('/admin') || location.pathname.startsWith('/registro');
 
   return (
-    // CONTENEDOR 100% ORIGINAL (Con overflow-x-hidden extra que solo previene bugs visuales en celular)
-    <div className="min-h-screen flex flex-col bg-slate-50 overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-slate-50 overflow-x-hidden selection:bg-emerald-200">
       <ScrollToTop />
       
       <MenuNavegacion 
@@ -226,16 +228,15 @@ const AppContent = () => {
         setMenuMovilAbierto={setMenuMovilAbierto} 
       />
 
-      {/* CONTENEDOR MAIN 100% ORIGINAL - Sin topes de ancho ni márgenes nuevos */}
-      <main className="flex-grow pt-28">
+      <main className="flex-grow pt-32">
         <Routes>
           <Route path="/" element={<Inicio />} />
-          <Route path="/tienda" element={<Tienda />} />
-          <Route path="/aves" element={<Aves />} />
+          <Route path="/tienda" element={<Tienda usuario={usuario} actualizarPlumas={actualizarPlumasGlobal} />} />
+          <Route path="/aves" element={<Aves usuario={usuario} actualizarPlumas={actualizarPlumasGlobal} />} />
+          <Route path="/nido-riesgo" element={<NidoRiesgo setUsuarioGlobal={setUsuario} actualizarPlumas={actualizarPlumasGlobal} />} />
           <Route path="/cuidados" element={<Cuidados />} />
           <Route path="/registro/:token" element={<Registro />} />
           <Route path="/sorteos" element={<Sorteos />} />
-          <Route path="/nido-riesgo" element={<NidoRiesgo setUsuarioGlobal={setUsuario} />} />
           <Route 
             path="/admin" 
             element={autorizado ? <PanelAdmin cerrarSesion={cerrarSesion} /> : <InicioSesion setAutorizado={setAutorizado} />} 

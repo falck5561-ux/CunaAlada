@@ -109,7 +109,7 @@ const CuestionarioAve = ({ avesDisponibles = [] }) => {
                     </div>
                     
                     <a 
-                        href={`https://wa.me/529811333772?text=Hola! Hice el test y me enamoré del ave anillada #${aveGanadora.anillo} (${aveGanadora.mutacion}). ¿Sigue disponible?`} 
+                        href={`https://wa.me/525642050757?text=Hola! Hice el test y me enamoré del ave anillada #${aveGanadora.anillo} (${aveGanadora.mutacion}). ¿Sigue disponible?`} 
                         target="_blank" 
                         rel="noopener noreferrer" 
                         className="w-full py-4 bg-[#25D366] text-white rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:brightness-105 transition-all shadow-lg active:scale-95 mb-4"
@@ -120,7 +120,7 @@ const CuestionarioAve = ({ avesDisponibles = [] }) => {
               ) : (
                  <div className="py-10">
                     <p className="text-slate-500 mb-4">¡Vaya! Justo ahora todos nuestros bebés han sido adoptados.</p>
-                    <a href="https://wa.me/529811333772" className="text-emerald-600 font-bold underline">Contáctanos para lista de espera</a>
+                    <a href="https://wa.me/525642050757" className="text-emerald-600 font-bold underline">Contáctanos para lista de espera</a>
                  </div>
               )}
 

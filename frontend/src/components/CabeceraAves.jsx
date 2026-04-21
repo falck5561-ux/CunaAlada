@@ -11,7 +11,7 @@ const CabeceraAves = ({ mostrarQuiz, setMostrarQuiz, onAbrirHuevos }) => {
         className="inline-flex items-center gap-2 bg-white/60 backdrop-blur-sm border border-emerald-100 px-4 py-1.5 rounded-full text-emerald-600 font-bold text-xs uppercase tracking-widest mb-6 shadow-sm"
       >
         <Crown size={14} className="fill-emerald-100" />
-        <span>Colección Exclusiva 2024</span>
+        <span>Colección Exclusiva 2026</span>
       </motion.div>
 
       <motion.h2 

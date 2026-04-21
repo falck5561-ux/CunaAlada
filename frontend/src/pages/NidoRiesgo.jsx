@@ -11,7 +11,8 @@ import ModalPagoPlumas from '../components/nido/ModalPagoPlumas';
 import ChatEnVivo from '../components/nido/ChatEnVivo'; 
 import { Info, ShoppingBag } from 'lucide-react';
 
-const NidoRiesgo = ({ setUsuarioGlobal }) => {
+// 🔥 PASO 1: Recibimos actualizarPlumas desde App.jsx
+const NidoRiesgo = ({ setUsuarioGlobal, actualizarPlumas }) => {
   const [socket, setSocket] = useState(null);
   const [usuarioLocal, setUsuarioLocal] = useState(null);
 
@@ -29,7 +30,8 @@ const NidoRiesgo = ({ setUsuarioGlobal }) => {
   const {
     plumas, apuesta, setApuesta, prediccion, fase,
     tiempoRestante, mensaje, historial, altitudes,
-    progresoVuelo, progresoPan, ultimoResultado, colocarApuesta
+    progresoVuelo, progresoPan, ultimoResultado, colocarApuesta,
+    setPlumas // 🔥 Asegúrate de que useJuegoNido exporte setPlumas si necesitas que el número grande baje también
   } = useJuegoNido(setUsuarioGlobal, socket); 
 
   const [modalActivo, setModalActivo] = useState(null); 
@@ -87,7 +89,7 @@ const NidoRiesgo = ({ setUsuarioGlobal }) => {
           </button>
         </div>
 
-        {/* 🔥 GRID DIVIDIDO EN FILAS PARA ALINEACIÓN PERFECTA */}
+        {/* GRID DIVIDIDO EN FILAS PARA ALINEACIÓN PERFECTA */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-8 gap-y-6 relative z-10 items-start">
           
           {/* FILA 1: MARCADOR SUPERIOR */}
@@ -96,7 +98,6 @@ const NidoRiesgo = ({ setUsuarioGlobal }) => {
           </div>
           
           {/* FILA 1: CELDA FANTASMA */}
-          {/* Esta celda invisible ocupa el espacio arriba del chat para obligarlo a bajar */}
           <div className="hidden lg:block lg:col-span-1"></div>
 
           {/* FILA 2: RADAR Y APUESTAS */}
@@ -138,7 +139,19 @@ const NidoRiesgo = ({ setUsuarioGlobal }) => {
       </div>
 
       {/* MODALES */}
-      <VentanasEmergentes tipo={modalActivo} alCerrar={() => setModalActivo(null)} alComprarPaquete={manejarCompraStripe} onComprarPack={manejarCompraStripe} plumas={plumas} />
+      <VentanasEmergentes 
+        tipo={modalActivo} 
+        alCerrar={() => setModalActivo(null)} 
+        alComprarPaquete={manejarCompraStripe} 
+        onComprarPack={manejarCompraStripe} 
+        plumas={plumas} 
+        // 🔥 PASO 2: Aquí está la conexión maestra. Cuando el catálogo cobra, avisa a estas dos funciones.
+        setPlumasActuales={(nuevoSaldo) => {
+          if (actualizarPlumas) actualizarPlumas(nuevoSaldo); // Esto baja el número del Header
+          if (setPlumas) setPlumas(nuevoSaldo); // Esto baja el número grande del minijuego
+        }}
+      />
+      
       {secretoStripe && (
         <ModalPagoPlumas clientSecret={secretoStripe} plumasCompradas={plumasPendientes} alCerrar={() => { setSecretoStripe(null); setPlumasPendientes(0); }} alCompletarExito={alCompletarPago} />
       )}

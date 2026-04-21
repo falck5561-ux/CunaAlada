@@ -167,7 +167,7 @@ const TarjetaAve = ({ ave }) => {
               </div>
               <div className="p-6 bg-white border-t border-slate-100 relative z-20">
                  <a 
-                    href={`https://wa.me/5219811333772?text=Hola, quiero adoptar al *${ave.especie}* (Ref: ${ave.anillo || 'S/N'}) ${esOferta ? '(¡Vi la OFERTA!)' : ''}.`}
+                    href={`https://wa.me/5215642050757?text=Hola, quiero adquirir al *${ave.especie}* (Ref: ${ave.anillo || 'S/N'}) ${esOferta ? '(¡Vi la OFERTA!)' : ''}.`}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()} 
