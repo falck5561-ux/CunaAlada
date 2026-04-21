@@ -18,7 +18,7 @@ import BotonWhatsApp from './components/BotonWhatsApp';
 // Iconos
 import { 
   Bird, ShoppingBag, Home, Menu, X, ShieldCheck, BookOpen,
-  LogOut, User, Gift, Flame
+  LogOut, User, Gift, Flame, Mail, MapPin, CheckCircle
 } from 'lucide-react';
 
 // ============================================================================
@@ -164,27 +164,90 @@ const MenuNavegacion = ({ usuario, cerrarSesion, menuMovilAbierto, setMenuMovilA
   );
 };
 
+// ============================================================================
+// CORRECCIÓN: FOOTER MEJORADO (4 COLUMNAS)
+// ============================================================================
 const FooterPrincipal = () => (
-  <footer className="bg-slate-900 text-white pt-20 pb-10 rounded-t-[3rem] md:rounded-t-[5rem] relative mt-20 border-t-[12px] border-emerald-500">
-    <div className="container mx-auto px-8 md:px-12">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
-        <div className="lg:col-span-5 space-y-6">
-          <div className="flex items-center justify-center md:justify-start gap-4">
-              <img src="/icono.png" alt="Logo" className="h-12 w-auto opacity-90 drop-shadow-md" />
-              <h3 className="text-3xl font-black m-0 tracking-tighter text-white uppercase">Cuna<span className="text-emerald-400">Alada</span></h3>
+  <footer className="bg-slate-900 text-white pt-20 pb-10 rounded-t-[3rem] md:rounded-t-[5rem] relative mt-20 border-t-[12px] border-emerald-500 overflow-hidden">
+    {/* Decoración de fondo */}
+    <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full -mr-48 -mt-48 blur-3xl"></div>
+    
+    <div className="container mx-auto px-8 md:px-12 relative z-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+        
+        {/* COLUMNA 1: IDENTIDAD */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <img src="/icono.png" alt="Logo" className="h-12 w-auto drop-shadow-md" />
+            <h3 className="text-2xl font-black m-0 tracking-tighter text-white uppercase">
+              Cuna<span className="text-emerald-400">Alada</span>
+            </h3>
           </div>
-          <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-sm mx-auto md:mx-0">
-            Dedicados a la crianza responsable y amorosa de aves exóticas en el Estado de Campeche, México.
+          <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-xs">
+            Criadero profesional dedicado a la preservación y crianza responsable de aves exóticas en Campeche, México.
           </p>
         </div>
+
+        {/* COLUMNA 2: NAVEGACIÓN RÁPIDA */}
+        <div className="space-y-6">
+          <h4 className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.3em]">Explorar</h4>
+          <ul className="space-y-4 p-0 list-none">
+            <li><Link to="/aves" className="text-slate-300 hover:text-white no-underline text-sm font-bold transition-colors">Nuestros Ejemplares</Link></li>
+            <li><Link to="/tienda" className="text-slate-300 hover:text-white no-underline text-sm font-bold transition-colors">Tienda Oficial</Link></li>
+            <li><Link to="/cuidados" className="text-slate-300 hover:text-white no-underline text-sm font-bold transition-colors">Academia</Link></li>
+            <li><Link to="/sorteos" className="text-slate-300 hover:text-white no-underline text-sm font-bold transition-colors">Sorteos</Link></li>
+          </ul>
+        </div>
+
+        {/* COLUMNA 3: COMPROMISO */}
+        <div className="space-y-6">
+          <h4 className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.3em]">Garantía</h4>
+          <ul className="space-y-4 p-0 list-none">
+            <li className="flex items-center gap-3 text-slate-300 text-sm font-bold">
+              <CheckCircle size={16} className="text-emerald-500" /> Salud Certificada
+            </li>
+            <li className="flex items-center gap-3 text-slate-300 text-sm font-bold">
+              <CheckCircle size={16} className="text-emerald-500" /> Envíos Seguros
+            </li>
+            <li className="flex items-center gap-3 text-slate-300 text-sm font-bold">
+              <CheckCircle size={16} className="text-emerald-500" /> Asesoría Vitalicia
+            </li>
+          </ul>
+        </div>
+
+        {/* COLUMNA 4: CONTACTO & UBICACIÓN */}
+        <div className="space-y-6 bg-white/5 p-6 rounded-[2.5rem] border border-white/10">
+          <h4 className="text-white text-[10px] font-black uppercase tracking-[0.2em]">Contacto Directo</h4>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 text-slate-300">
+              <Mail size={18} className="text-emerald-400" />
+              <span className="text-xs font-bold">contacto@cunaalada.com</span>
+            </div>
+            <div className="flex items-center gap-3 text-slate-300">
+              <MapPin size={18} className="text-emerald-400" />
+              <span className="text-xs font-bold">Campeche, México</span>
+            </div>
+          </div>
+        </div>
+
       </div>
-      <div className="border-t border-white/10 pt-8 text-center text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">
-        © {new Date().getFullYear()} CUNA ALADA • CAMPECHE
+
+      <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em]">
+          © {new Date().getFullYear()} CUNA ALADA • CRIADERO PROFESIONAL
+        </div>
+        <div className="flex gap-8">
+           <span className="text-slate-600 text-[9px] font-black uppercase tracking-widest hover:text-emerald-400 cursor-pointer transition-colors">Privacidad</span>
+           <span className="text-slate-600 text-[9px] font-black uppercase tracking-widest hover:text-emerald-400 cursor-pointer transition-colors">Términos</span>
+        </div>
       </div>
     </div>
   </footer>
 );
 
+// ============================================================================
+// COMPONENTE PRINCIPAL APP CONTENT
+// ============================================================================
 const AppContent = () => {
   const [autorizado, setAutorizado] = useState(!!localStorage.getItem('adminToken'));
   const [usuario, setUsuario] = useState(null);
