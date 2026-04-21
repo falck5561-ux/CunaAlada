@@ -78,7 +78,7 @@ export const useTienda = () => {
 
   const mostrarNotificacion = (msj, tipo = 'success') => {
     setNotificacion({ msj, tipo });
-    setTimeout(() => setNotificacion(null), 3500); // Tiempo un poco mayor para leer mejor
+    setTimeout(() => setNotificacion(null), 3500); 
   };
 
   const totalCarrito = useMemo(() => {
@@ -132,7 +132,7 @@ export const useTienda = () => {
     localStorage.removeItem('cuna-carrito');
   };
 
-  // 🔥 REGISTRO MEJORADO CON DOBLE VALIDACIÓN
+  // 🔥 REGISTRO ACTUALIZADO: AHORA SINCRONIZA EL STOCK AL INSTANTE
   const registrarPedidoEnDB = async (metodo = 'efectivo') => {
     const nombreUsuario = obtenerNombreUsuarioActual();
     
@@ -141,20 +141,17 @@ export const useTienda = () => {
       return null;
     }
     
-    // 🛡️ DOBLE VALIDACIÓN: Límite de Efectivo
     if (metodo === 'efectivo' && totalCarrito > 600) {
       mostrarNotificacion("El límite para pedidos en efectivo es de $600 MXN.", "error");
       return null;
     }
 
-    // 🛡️ BLOQUEO: No permitir dos tickets en efectivo al mismo tiempo
     if (metodo === 'efectivo' && tickets.some(t => t.estado === 'pendiente')) {
       mostrarNotificacion("Ya tienes una reserva pendiente en caja. Liquídala antes de pedir otra.", "error");
       return null;
     }
 
     try {
-      // Definimos el estado final de forma estricta
       const estadoDeseado = metodo === 'tarjeta' ? 'pagado' : 'pendiente';
 
       const datosPedido = {
@@ -171,15 +168,20 @@ export const useTienda = () => {
 
       const res = await axios.post(`${API_URL}/pedidos-tienda/crear`, datosPedido);
       
-      // Armamos el objeto para la UI garantizando el estado correcto
       const pedidoParaUI = {
         ...res.data.pedido,
         estado: estadoDeseado
       };
 
-      // Actualizamos historial local instantáneamente
+      // 1. Actualizamos historial de folios
       setTickets(prev => [pedidoParaUI, ...prev]);
+      
+      // 2. Limpiamos la cesta
       vaciarCarrito(); 
+
+      // 3. ✨ LA CORRECCIÓN: Actualizamos el inventario visual de la tienda
+      // Esto hace que el stock baje en las tarjetas de producto inmediatamente.
+      await obtenerProductos(); 
       
       const mensajeExito = metodo === 'tarjeta' 
         ? "¡PAGO CONFIRMADO! GENERANDO FOLIO..." 
@@ -202,7 +204,6 @@ export const useTienda = () => {
     return `https://wa.me/5215642050757?text=${encodeURIComponent(mensaje)}`;
   };
 
-  // Lógica de filtrado y ordenamiento optimizada
   const productosProcesados = useMemo(() => {
     let res = [...productos];
     if (categoriaActiva !== 'Todos') res = res.filter(p => p.categoria === categoriaActiva);

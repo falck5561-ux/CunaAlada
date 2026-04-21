@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const PedidoTienda = require('../models/PedidoTienda');
+// 🔥 PASO 1: Importar el modelo de Producto para poder restarle stock
+const Producto = require('../models/Producto'); 
 
 // 1. CREAR EL PEDIDO
 router.post('/crear', async (req, res) => {
@@ -18,8 +20,19 @@ router.post('/crear', async (req, res) => {
             estado: estado || 'pendiente' 
         });
 
+        // Guardamos el pedido en la BD
         await nuevoPedido.save();
-        res.json({ message: 'Pedido registrado', pedido: nuevoPedido });
+
+        // 🔥 PASO 2: EL CICLO MÁGICO PARA BAJAR EL STOCK 🔥
+        // Recorremos el arreglo de productos que viene del frontend
+        for (const item of productos) {
+            await Producto.findOneAndUpdate(
+                { nombre: item.nombre }, // Buscamos el producto por su nombre
+                { $inc: { stock: -item.cantidad } } // Restamos la cantidad comprada ($inc negativo)
+            );
+        }
+
+        res.json({ message: 'Pedido registrado y stock actualizado', pedido: nuevoPedido });
     } catch (error) {
         console.error("Error al crear pedido:", error);
         res.status(500).json({ message: 'Error al procesar pedido.' });
@@ -32,8 +45,6 @@ router.get('/consultar/:id', async (req, res) => {
         const pedido = await PedidoTienda.findById(req.params.id);
         if (!pedido) return res.status(404).json({ message: 'Pedido no encontrado.' });
 
-        // ✨ CORRECCIÓN FINAL: Solo bloquea si ya fue ENTREGADO al cliente
-        // Si dice 'pagado' (tarjeta), lo dejará pasar para que el admin confirme la entrega.
         if (pedido.estado === 'entregado') {
             const fecha = new Date(pedido.fechaEntrega || pedido.fecha).toLocaleString();
             return res.status(400).json({ 
@@ -54,7 +65,6 @@ router.patch('/confirmar/:id', async (req, res) => {
     try {
         const { adminNombre } = req.body; 
         
-        // ✨ Cuando el admin da clic, el estado cambia a ENTREGADO
         const pedidoActualizado = await PedidoTienda.findByIdAndUpdate(
             req.params.id,
             { 
@@ -77,12 +87,11 @@ router.get('/mis-pedidos', async (req, res) => {
         const { usuario } = req.query;
         const limite48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
-        // ✨ LIMPIEZA: Ocultamos los 'entregados'. Así los tickets desaparecen de la app del cliente
         const pedidos = await PedidoTienda.find({ 
             usuarioNombre: usuario, 
             $or: [
-                { estado: 'pagado' }, // Pagados con tarjeta que aún no se recogen
-                { estado: 'pendiente', fecha: { $gte: limite48h } } // Efectivo menor a 48h
+                { estado: 'pagado' }, 
+                { estado: 'pendiente', fecha: { $gte: limite48h } } 
             ]
         }).sort({ fecha: -1 });
         
