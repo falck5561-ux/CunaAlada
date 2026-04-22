@@ -5,7 +5,7 @@ import {
   Scan, CheckCircle2, XCircle, RefreshCw, 
   ShieldAlert, Package, Bird, Check, RotateCcw,
   Zap, ShieldCheck, Cpu, Banknote, ShoppingCart,
-  Target, Info, User, Calendar
+  Target, Info, User, Calendar, Trophy
 } from 'lucide-react';
 
 const API_URL = 'http://localhost:5000/api'; 
@@ -30,16 +30,23 @@ const EscanerAdmin = () => {
       );
 
       scanner.render((text) => {
+        // Validación Juego
         if (text.startsWith("VAL-LONJA:")) {
           const id = text.split(':')[1];
           const user = text.split(':')[3];
           scanner.clear().catch(err => console.error(err));
           consultarTicketJuego(id, user);
         } 
+        // Validación Tienda
         else if (text.startsWith("PEDIDO-TIENDA:")) {
           const id = text.split(':')[1];
           scanner.clear().catch(err => console.error(err));
           consultarPedidoTienda(id);
+        }
+        // Validación Sorteos (Golden Ticket)
+        else if (text.startsWith("WIN-CUNA-")) {
+          scanner.clear().catch(err => console.error(err));
+          consultarPremioSorteo(text);
         }
       }, () => {});
 
@@ -93,14 +100,63 @@ const EscanerAdmin = () => {
             usuarioNombre: pedido.usuarioNombre,
             totalCobrar: pedido.total,
             items: pedido.productos,
-            estado: pedido.estado, // Ahora nos indicará si es 'entregado'
+            estado: pedido.estado, 
             tipoApp: 'tienda'
         });
-        setErrorMsg(err.response.data.message); // Mostrará "YA FUE ENTREGADO"
+        setErrorMsg(err.response.data.message); 
         setPaso('verificado');
       } else {
         setErrorMsg("PEDIDO NO ENCONTRADO EN LA BASE DE DATOS");
         setPaso('esperando');
+      }
+    } finally { setProcesando(false); }
+  };
+
+  // 🔥 AQUÍ ESTÁ LA NUEVA IMPLEMENTACIÓN PARA MOSTRAR HISTORIAL EN DENEGADOS
+  const consultarPremioSorteo = async (codigoQR) => {
+    setProcesando(true);
+    setErrorMsg(null);
+    try {
+      const res = await axios.get(`${API_URL}/sorteos/validar-qr/${codigoQR}`);
+      const sorteo = res.data.sorteo;
+      
+      setDatos({
+        _id: sorteo._id,
+        folio: codigoQR,
+        usuarioNombre: sorteo.ganador.nombreCliente,
+        itemNombre: sorteo.premio,
+        numeroBoleto: sorteo.ganador.numeroBoleto,
+        estado: sorteo.estado,
+        tipoApp: 'sorteo',
+        aveFoto: sorteo.aveId?.foto || sorteo.aveId?.fotoUrl, 
+        aveAnillo: sorteo.aveId?.anillo
+      });
+      setPaso('verificado');
+    } catch (err) {
+      if (err.response?.status === 400) {
+         // Leemos los datos del sorteo que el backend nos acaba de enviar en el catch
+         const sorteo = err.response.data.sorteo;
+         
+         // Si el backend nos mandó el historial del ave, lo preparamos para dibujarlo
+         if (sorteo) {
+             setDatos({
+                 _id: sorteo._id,
+                 folio: codigoQR,
+                 usuarioNombre: sorteo.ganador.nombreCliente,
+                 itemNombre: sorteo.premio,
+                 numeroBoleto: sorteo.ganador.numeroBoleto,
+                 estado: sorteo.estado,
+                 tipoApp: 'sorteo',
+                 aveFoto: sorteo.aveId?.foto || sorteo.aveId?.fotoUrl, 
+                 aveAnillo: sorteo.aveId?.anillo
+             });
+         }
+         
+         setErrorMsg(err.response.data.message || "ESTE PREMIO YA FUE ENTREGADO");
+         setPaso('verificado');
+      } else {
+         setErrorMsg("CÓDIGO DE PREMIO INVÁLIDO O NO ENCONTRADO");
+         setPaso('esperando');
       }
     } finally { setProcesando(false); }
   };
@@ -110,8 +166,9 @@ const EscanerAdmin = () => {
     const adminActual = localStorage.getItem('user-nombre') || 'Josué Pérez';
     try {
       if (datos.tipoApp === 'tienda') {
-        // Al confirmar, el backend lo pasará a estado 'entregado'
         await axios.patch(`${API_URL}/pedidos-tienda/confirmar/${datos._id}`, { adminNombre: adminActual });
+      } else if (datos.tipoApp === 'sorteo') {
+        await axios.patch(`${API_URL}/sorteos/entregar-premio/${datos._id}`, { adminNombre: adminActual });
       } else {
         await axios.patch(`${API_URL}/canjes/confirmar-entrega/${datos._id}`);
       }
@@ -124,7 +181,6 @@ const EscanerAdmin = () => {
   return (
     <div className="min-h-screen bg-[#020617] p-4 md:p-10 flex flex-col items-center justify-center font-sans overflow-hidden">
       
-      {/* Fondo Decorativo Estilo Cyber */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/10 blur-[120px] rounded-full" />
@@ -133,10 +189,8 @@ const EscanerAdmin = () => {
 
       <div className="w-full max-w-2xl relative z-10">
         
-        {/* CARD PRINCIPAL - GLASSMORPHISM */}
         <div className="bg-[#0f172a]/80 backdrop-blur-2xl border border-white/10 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden">
           
-          {/* Header de la Terminal */}
           <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-white/5">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-cyan-500/20 rounded-2xl flex items-center justify-center border border-cyan-500/30">
@@ -155,7 +209,6 @@ const EscanerAdmin = () => {
           </div>
 
           <div className="p-8">
-            {/* --- PASO 1: ESCANEO --- */}
             {paso === 'esperando' && (
               <div className="space-y-8 animate-in fade-in duration-700">
                 <div className="text-center">
@@ -167,17 +220,14 @@ const EscanerAdmin = () => {
                 </div>
 
                 <div className="relative mx-auto max-w-sm group">
-                   {/* Esquinas de diseño */}
                   <div className="absolute -top-3 -left-3 w-10 h-10 border-t-2 border-l-2 border-cyan-500 rounded-tl-2xl z-20" />
                   <div className="absolute -top-3 -right-3 w-10 h-10 border-t-2 border-r-2 border-cyan-500 rounded-tr-2xl z-20" />
                   <div className="absolute -bottom-3 -left-3 w-10 h-10 border-b-2 border-l-2 border-cyan-500 rounded-bl-2xl z-20" />
                   <div className="absolute -bottom-3 -right-3 w-10 h-10 border-b-2 border-r-2 border-cyan-500 rounded-br-2xl z-20" />
 
-                  {/* Contenedor del Scanner */}
                   <div className="rounded-[2rem] overflow-hidden bg-black/60 border border-white/5 relative aspect-square shadow-inner">
                     <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none z-10 animate-pulse" />
                     <div className="absolute top-0 left-0 w-full h-[2px] bg-cyan-400 shadow-[0_0_20px_#22d3ee] animate-scanner-line z-20" />
-                    
                     <div id="lector-qr" className="w-full h-full object-cover grayscale brightness-125 contrast-125"></div>
                   </div>
                 </div>
@@ -191,11 +241,9 @@ const EscanerAdmin = () => {
               </div>
             )}
 
-            {/* --- PASO 2: RESULTADOS --- */}
             {paso === 'verificado' && datos && (
               <div className="space-y-6 animate-in slide-in-from-bottom-6 duration-500">
                 
-                {/* Status Badge */}
                 <div className={`py-4 rounded-[2rem] border-2 text-center relative overflow-hidden ${
                   errorMsg ? 'bg-rose-500/5 border-rose-500/30 text-rose-500' : 'bg-emerald-500/5 border-emerald-500/30 text-emerald-500'
                 }`}>
@@ -208,11 +256,10 @@ const EscanerAdmin = () => {
                   </p>
                 </div>
 
-                {/* Info Box */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5">
                     <div className="flex items-center gap-3 text-slate-400 mb-2">
-                      <User size={16} /> <span className="text-[10px] font-black uppercase">Cliente / Usuario</span>
+                      <User size={16} /> <span className="text-[10px] font-black uppercase">Cliente / Ganador</span>
                     </div>
                     <p className="text-xl font-bold text-white truncate">{datos.usuarioNombre}</p>
                   </div>
@@ -224,7 +271,6 @@ const EscanerAdmin = () => {
                   </div>
                 </div>
 
-                {/* 🔴 NUEVO: BANNER DE INSTRUCCIÓN DE COBRO PARA EL ADMIN */}
                 {datos.tipoApp === 'tienda' && !errorMsg && (
                   <div className={`p-4 rounded-[1.5rem] border-2 flex items-center justify-center gap-3 shadow-lg ${
                     datos.estado === 'pagado' 
@@ -238,11 +284,10 @@ const EscanerAdmin = () => {
                   </div>
                 )}
 
-                {/* Detalles de lo que se entrega */}
                 <div className="bg-black/40 rounded-[2.5rem] border border-white/5 p-6">
                   <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/5">
-                    <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Resumen del Pedido</span>
-                    {datos.tipoApp === 'tienda' ? <ShoppingCart size={18} className="text-slate-500" /> : <Bird size={18} className="text-slate-500" />}
+                    <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Resumen de Operación</span>
+                    {datos.tipoApp === 'tienda' ? <ShoppingCart size={18} className="text-slate-500" /> : datos.tipoApp === 'sorteo' ? <Trophy size={18} className="text-amber-500" /> : <Bird size={18} className="text-slate-500" />}
                   </div>
 
                   <div className="space-y-3 max-h-48 overflow-y-auto custom-scrollbar pr-2">
@@ -256,6 +301,48 @@ const EscanerAdmin = () => {
                           <span className="text-sm font-black text-white">${it.precio * it.cantidad}</span>
                         </div>
                       ))
+                    ) : datos.tipoApp === 'sorteo' ? (
+                       <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-3xl bg-slate-900 border border-slate-800 shadow-inner duration-500">
+                         {/* Foto del Ave */}
+                         <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden border-2 border-amber-500/30 shadow-[0_0_20px_rgba(251,191,36,0.1)] shrink-0 group">
+                           <img 
+                             src={
+                               datos.aveFoto 
+                                 ? (datos.aveFoto.startsWith('http') 
+                                     ? datos.aveFoto 
+                                     : `http://localhost:5000${datos.aveFoto.startsWith('/') ? '' : '/'}${datos.aveFoto}`)
+                                 : '/portada.png'
+                             } 
+                             alt={datos.itemNombre} 
+                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                             onError={(e) => { e.target.onerror = null; e.target.src = '/portada.png'; }}
+                           />
+                         </div>
+                         
+                         {/* Detalles del Premio */}
+                         <div className="flex-1 text-center sm:text-left">
+                           <p className="text-sm font-bold text-amber-400 uppercase tracking-widest mb-1 flex items-center justify-center sm:justify-start gap-2">
+                             <Trophy size={16} className="text-amber-500 animate-pulse" /> Sorteo Validado
+                           </p>
+                           <p className="text-xl md:text-2xl font-black text-white italic tracking-tight mb-3">
+                             {datos.itemNombre}
+                           </p>
+                           
+                           <div className="grid grid-cols-2 gap-3 text-left">
+                             <div className="bg-white/5 p-3 rounded-xl border border-white/5 flex items-center gap-3">
+                               <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black text-cyan-400 border border-white/10 shrink-0">#{datos.numeroBoleto}</span>
+                               <p className="text-xs text-slate-300 font-bold leading-tight">Boleto</p>
+                             </div>
+                             <div className="bg-white/5 p-3 rounded-xl border border-white/5 flex items-center gap-3">
+                               <Bird className="text-emerald-400 shrink-0" size={24}/>
+                               <div>
+                                   <p className="text-xs text-slate-300 font-bold leading-tight">Anillo Ave:</p>
+                                   <p className="text-base font-extrabold text-white tracking-wider">{datos.aveAnillo || 'N/A'}</p>
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                       </div>
                     ) : (
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
@@ -272,7 +359,6 @@ const EscanerAdmin = () => {
                   {datos.tipoApp === 'tienda' && (
                     <div className="mt-6 pt-4 border-t-2 border-white/5 flex justify-between items-center">
                       <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Monto Total</span>
-                      {/* El color del total cambia para advertir si falta cobrar */}
                       <span className={`text-4xl font-black italic leading-none ${datos.estado === 'pagado' ? 'text-emerald-400' : 'text-amber-400'}`}>
                         ${datos.totalCobrar}
                       </span>
@@ -287,15 +373,13 @@ const EscanerAdmin = () => {
                   </div>
                 )}
 
-                {/* Acciones */}
                 {!errorMsg ? (
                   <button 
                     onClick={confirmarOperacion}
                     className="w-full py-6 bg-emerald-600 hover:bg-emerald-500 text-slate-950 rounded-[2rem] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] shadow-[0_10px_40px_rgba(16,185,129,0.3)] transition-all flex items-center justify-center gap-3 active:scale-95 group"
                   >
                     <ShieldCheck size={24} strokeWidth={3} className="group-hover:scale-125 transition-transform" />
-                    {/* El botón se adapta a la acción necesaria */}
-                    {datos.tipoApp === 'tienda' && datos.estado === 'pendiente' ? 'COBRAR Y ENTREGAR' : 'CONFIRMAR ENTREGA'}
+                    {datos.tipoApp === 'tienda' && datos.estado === 'pendiente' ? 'COBRAR Y ENTREGAR' : datos.tipoApp === 'sorteo' ? 'CONFIRMAR ENTREGA DE PREMIO' : 'CONFIRMAR ENTREGA'}
                   </button>
                 ) : (
                   <button onClick={() => setPaso('esperando')} className="w-full py-5 bg-white/5 hover:bg-white/10 text-white rounded-[2rem] font-black uppercase border border-white/10 transition-all flex items-center justify-center gap-3">
@@ -305,7 +389,6 @@ const EscanerAdmin = () => {
               </div>
             )}
 
-            {/* --- PASO 3: ÉXITO --- */}
             {paso === 'exito' && (
               <div className="text-center py-10 animate-in zoom-in duration-500">
                 <div className="relative inline-block mb-8">
@@ -328,7 +411,6 @@ const EscanerAdmin = () => {
           </div>
         </div>
 
-        {/* Info Footer */}
         <div className="mt-8 flex justify-center items-center gap-6 text-slate-500 font-black text-[9px] uppercase tracking-[0.3em]">
           <div className="flex items-center gap-2"><Zap size={10} className="text-cyan-500" /> Latencia: 14ms</div>
           <div className="flex items-center gap-2"><Cpu size={10} className="text-emerald-500" /> Encryption: AES-256</div>
@@ -336,7 +418,6 @@ const EscanerAdmin = () => {
         </div>
       </div>
 
-      {/* Overlay de Carga General */}
       {procesando && (
         <div className="fixed inset-0 bg-[#020617]/90 backdrop-blur-md z-[100] flex flex-col items-center justify-center">
           <div className="relative">
@@ -349,7 +430,6 @@ const EscanerAdmin = () => {
         </div>
       )}
 
-      {/* Estilos CSS Adicionales */}
       <style>{`
         @keyframes scanner-line {
           0% { top: 0; }

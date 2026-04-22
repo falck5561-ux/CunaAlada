@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-// 1. Importamos la URL dinámica
 import { API_URL } from '../config/api'; 
 
 export const useSorteos = () => {
@@ -11,25 +10,34 @@ export const useSorteos = () => {
     const [datosCliente, setDatosCliente] = useState({ nombre: '', email: '', telefono: '' });
     const [mensajeExito, setMensajeExito] = useState(null);
 
-    // Aquí puedes poner el email del usuario logueado si lo tienes en el context
-    const emailUsuarioActual = "josueponcearch@gmail.com"; 
+    // 🔥 CORRECCIÓN CLAVE PARA LA PLENARIA: Leer el email dinámicamente
+    const obtenerEmailUsuario = () => {
+        const sesion = localStorage.getItem('cuna_usuario');
+        if (sesion) {
+            try {
+                const usuario = JSON.parse(sesion);
+                // Si guardas el correo como 'email' o 'correo', ajusta esto si es necesario
+                return usuario.email || usuario.correo || ''; 
+            } catch (e) {
+                return '';
+            }
+        }
+        return '';
+    };
+
+    const emailUsuarioActual = obtenerEmailUsuario(); 
 
     const cargarSorteos = async () => {
         try {
-            // 🔥 CAMBIO CLAVE: Agregamos ?publico=true a la URL.
-            // Esto le avisa al backend que solo queremos los sorteos que NO están ocultos.
             const res = await axios.get(`${API_URL}/sorteos?publico=true`);
             
             if (res.data && res.data.length > 0) {
                 setSorteos(res.data);
             } else {
-                // Si la base de datos responde vacío o no hay visibles, 
-                // puedes dejar la lista vacía o poner el demo.
                 setSorteos([]);
             }
         } catch (error) {
             console.error("Error al cargar sorteos:", error);
-            // Si hay un error, dejamos la lista como estaba para no romper la UI
         } finally {
             setLoading(false);
         }
@@ -37,7 +45,7 @@ export const useSorteos = () => {
 
     useEffect(() => {
         cargarSorteos();
-        // Polling: revisa cada 10 segundos si hay nuevos boletos vendidos o nuevos sorteos
+        // Polling: revisa cada 10 segundos
         const interval = setInterval(cargarSorteos, 10000); 
         return () => clearInterval(interval);
     }, []);
@@ -45,7 +53,13 @@ export const useSorteos = () => {
     const abrirModal = (sorteo) => {
         setModalCompra({ show: true, sorteo });
         setNumerosSeleccionados([]); 
-        setDatosCliente({ nombre: '', email: '', telefono: '' }); 
+        
+        // Autocompletar el email si el usuario ya está logueado
+        setDatosCliente({ 
+            nombre: '', 
+            email: emailUsuarioActual, 
+            telefono: '' 
+        }); 
     };
 
     const toggleNumero = (n) => {
@@ -58,7 +72,7 @@ export const useSorteos = () => {
     const handlePagoExitoso = (boletosComprados) => {
         setMensajeExito(boletosComprados);
         setModalCompra({ show: false, sorteo: null });
-        cargarSorteos(); // Recargamos para que se vean los nuevos boletos ocupados
+        cargarSorteos(); 
     };
 
     return {

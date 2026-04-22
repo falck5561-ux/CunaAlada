@@ -54,7 +54,7 @@ exports.cambiarVisibilidad = async (req, res) => {
     }
 };
 
-// 3. REVELAR GANADOR
+// 3. REVELAR GANADOR (CON GOLDEN TICKET Y CÓDIGO QR)
 exports.revelarGanador = async (req, res) => {
     try {
         const sorteo = await Sorteo.findById(req.params.id).populate('aveId');
@@ -67,14 +67,21 @@ exports.revelarGanador = async (req, res) => {
             return res.status(400).json({ success: false, message: 'No se puede sortear sin boletos vendidos.' });
         }
 
+        // Elegimos al ganador al azar
         const indiceGanador = Math.floor(Math.random() * sorteo.boletosVendidos.length);
         const boletoGanador = sorteo.boletosVendidos[indiceGanador];
         
+        // 🔥 MAGIA: Generamos el Código de Reclamo Único
+        const hashAleatorio = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const codigoQR = `WIN-CUNA-${hashAleatorio}`;
+
         sorteo.estado = 'FINALIZADO';
         sorteo.ganador = {
             nombreCliente: boletoGanador.nombreCliente,
             usuarioEmail: boletoGanador.usuarioEmail,
-            numeroBoleto: boletoGanador.numeroBoleto
+            numeroBoleto: boletoGanador.numeroBoleto,
+            // Guardamos el código para que el Frontend dibuje el QR
+            codigoReclamo: codigoQR 
         };
 
         if(sorteo.aveId) {
@@ -84,6 +91,10 @@ exports.revelarGanador = async (req, res) => {
         }
 
         await sorteo.save();
+        
+        // Log para confirmación en el servidor
+        console.log(`🏆 SORTEO FINALIZADO: El ganador es ${boletoGanador.nombreCliente} con el código ${codigoQR}`);
+        
         res.json({ success: true, sorteo });
     } catch (error) { 
         console.error("Error al revelar ganador:", error);
@@ -156,4 +167,45 @@ exports.confirmarCompra = async (req, res) => {
         await sorteo.save();
         res.json({ success: true, message: 'Boletos adquiridos con éxito', boletos: numerosBoletos, sorteo });
     } catch (error) { res.status(500).json(error); }
+};
+
+// 8. VALIDAR QR DEL GOLDEN TICKET (CUNASCANNER)
+exports.validarQR = async (req, res) => {
+    try {
+        // 🔥 CORRECCIÓN: Agregamos .populate('aveId') para traer la foto y el anillo
+        const sorteo = await Sorteo.findOne({ "ganador.codigoReclamo": req.params.codigo }).populate('aveId');
+        
+        if (!sorteo) {
+            return res.status(404).json({ message: "CÓDIGO NO ENCONTRADO O INVÁLIDO." });
+        }
+
+        // 🔥 LA SOLUCIÓN: Si ya está entregado, mandamos el error 400 pero ADJUNTAMOS los datos del sorteo
+        if (sorteo.estado === 'ENTREGADO') {
+            return res.status(400).json({ 
+                message: "ESTE PREMIO YA FUE ENTREGADO AL GANADOR.",
+                sorteo: sorteo 
+            });
+        }
+
+        // Si todo está bien y no se ha entregado, mandamos los datos normales
+        res.json({ success: true, sorteo });
+    } catch (error) {
+        console.error("Error al validar QR:", error);
+        res.status(500).json({ message: "Error interno del servidor al validar." });
+    }
+};
+
+// 9. MARCAR PREMIO COMO ENTREGADO
+exports.entregarPremio = async (req, res) => {
+    try {
+        const sorteo = await Sorteo.findByIdAndUpdate(
+            req.params.id,
+            { estado: 'ENTREGADO' },
+            { new: true }
+        );
+        res.json({ success: true, sorteo });
+    } catch (error) {
+        console.error("Error al entregar premio:", error);
+        res.status(500).json({ message: "Error al confirmar entrega." });
+    }
 };

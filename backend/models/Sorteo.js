@@ -39,7 +39,8 @@ const SorteoSchema = new mongoose.Schema({
     // 4. LAS FASES DEL SHOW
     estado: { 
         type: String, 
-        enum: ['ACTIVO', 'LLENO', 'FINALIZADO'], 
+        // 🔥 CORRECCIÓN 1: Agregamos 'ENTREGADO' para que el escáner no falle al guardar
+        enum: ['ACTIVO', 'LLENO', 'FINALIZADO', 'ENTREGADO'], 
         default: 'ACTIVO' 
     },
     
@@ -59,7 +60,9 @@ const SorteoSchema = new mongoose.Schema({
     ganador: {
         nombreCliente: String,
         usuarioEmail: String,
-        numeroBoleto: Number
+        numeroBoleto: Number,
+        // 🔥 CORRECCIÓN 2: Agregamos este campo para que MongoDB no borre el QR
+        codigoReclamo: String 
     }
 }, { 
     timestamps: true // Crea automáticamente createdAt y updatedAt
